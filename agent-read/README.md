@@ -26,5 +26,6 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 ## Current Workspace Notes
 
 - The local `lingbot-va` conda environment was created for this repository.
+- RoboTwin evaluation is wired to `/home/zaijia001/vam/RoboTwin-lingbot` by default and can be overridden with `ROBOTWIN_ROOT`.
 - `lerobot==0.3.3` remains installed for post-training support, but its published dependency constraints conflict with the upstream LingBot-VA PyTorch requirement. Follow the repository README and treat it as a `--no-deps` style add-on.
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.

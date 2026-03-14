@@ -6,4 +6,5 @@
 - Installed the base LingBot-VA runtime stack around Python `3.10.16` and PyTorch `2.9.0+cu126`.
 - Added a runtime-safe fallback in `wan_va/modules/model.py` so missing or broken `flash-attn` no longer crashes module import when `attn_mode='torch'` is used.
 - Added a minimal `.gitignore` entry for Python bytecode caches generated during validation.
+- Pointed RoboTwin evaluation to the dedicated `/home/zaijia001/vam/RoboTwin-lingbot` worktree by default, with `ROBOTWIN_ROOT` as an override.
 - Documented the environment and attention-backend compatibility notes in `agent-read/`.
