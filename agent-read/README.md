@@ -12,8 +12,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 ## Supported Environment Assumptions
 
 - Python `3.10.x`
-- PyTorch `2.9.0`
-- CUDA runtime packages matching the `cu126` wheel set
+- PyTorch `2.9.0+cu128`
+- CUDA runtime packages matching the `cu128` wheel set
 - `diffusers==0.36.0`
 - `transformers==4.55.2`
 
@@ -27,6 +27,15 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 
 - The local `lingbot-va` conda environment was created for this repository.
 - The RoboTwin evaluation config points to `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`.
+- The RoboTwin checkpoint currently in use is the post-trained RoboTwin model `robbyant/lingbot-va-posttrain-robotwin`; the pre-RoboTwin base model is `robbyant/lingbot-va-base`.
 - RoboTwin evaluation is wired to `/home/zaijia001/vam/RoboTwin-lingbot` by default and can be overridden with `ROBOTWIN_ROOT`.
 - `lerobot==0.3.3` remains installed for post-training support, but its published dependency constraints conflict with the upstream LingBot-VA PyTorch requirement. Follow the repository README and treat it as a `--no-deps` style add-on.
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.
+- The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/lingbot-v0.md`.
+
+## Current Evaluation Conclusions
+
+- `click_bell` minimal eval was validated end-to-end earlier.
+- `click_alarmclock` completed `10/10` successfully under the current `lingbot-va + RoboTwin-lingbot` setup.
+- `press_stapler` had reached `9/9` success in `res.json` before the user's interruption/abnormal close.
+- Heavier tasks such as `turn_switch` are still runnable in principle, but are much slower on this machine because RoboTwin must fall back from `curobo` to `MPLib`.

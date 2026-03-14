@@ -9,3 +9,6 @@
 - Pointed RoboTwin evaluation to the dedicated `/home/zaijia001/vam/RoboTwin-lingbot` worktree by default, with `ROBOTWIN_ROOT` as an override.
 - Downloaded the `robbyant/lingbot-va-posttrain-robotwin` checkpoint into `checkpoints/` and wired `va_robotwin_cfg.py` to use it.
 - Documented the environment and attention-backend compatibility notes in `agent-read/`.
+- Updated the `lingbot-va` runtime to the `cu128` PyTorch wheel set so Blackwell GPUs on this machine can run inference.
+- Added `agent-read/lingbot-v0.md` to document the current RoboTwin model input/output contract, latent path, server-side preprocessing, returned action semantics, and the evaluation conclusions observed in this workspace.
+- Confirmed a complete `click_alarmclock` RoboTwin eval at `10/10` success; `press_stapler` had reached `9/9` success before the interrupted session ended.
