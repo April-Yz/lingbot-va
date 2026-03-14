@@ -26,10 +26,17 @@ from torch.nn.attention.flex_attention import (
 )
 from functools import partial
 
+flash_attn_import_error = None
+flash_attn_func = None
 try:
     from flash_attn_interface import flash_attn_func
-except:
-    from flash_attn import flash_attn_func
+except Exception as exc:
+    flash_attn_import_error = exc
+    try:
+        from flash_attn import flash_attn_func
+        flash_attn_import_error = None
+    except Exception as inner_exc:
+        flash_attn_import_error = inner_exc
 
 __all__ = ['WanTransformer3DModel']
 
@@ -302,6 +309,12 @@ class WanAttention(torch.nn.Module):
         if attn_mode == 'torch':
             self.attn_op = custom_sdpa
         elif attn_mode == 'flashattn':
+            if flash_attn_func is None:
+                raise RuntimeError(
+                    "flash-attn is unavailable in this environment. "
+                    "Use attn_mode='torch' or install a flash-attn build "
+                    "compatible with the current PyTorch/CUDA stack."
+                ) from flash_attn_import_error
             self.attn_op = flash_attn_func
         elif attn_mode == 'flex':
             self.attn_op = FlexAttnFunc(cross_attention_dim_head is not None)
