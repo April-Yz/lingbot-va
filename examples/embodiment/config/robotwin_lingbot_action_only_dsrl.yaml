@@ -1,0 +1,62 @@
+# Minimal action-only DSRL baseline for LingBot-VA + RoboTwin.
+# This config keeps the LingBot backbone frozen and only trains
+# the steering actor / critic / alpha with an embodied-SAC style loop.
+
+env:
+  robowin_root: /home/zaijia001/vam/RoboTwin-lingbot
+  task_name: click_bell
+  task_config: demo_clean
+  instruction_type: seen
+
+runner:
+  seed: 10000
+  save_root: /home/zaijia001/vam/lingbot-va/train_out/action_only_dsrl_click_bell
+  max_episodes: 1
+  max_action_chunks: 2
+
+policy:
+  lingbot_config_name: robotwin
+  lingbot_model_path: /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin
+  save_root: /home/zaijia001/vam/lingbot-va/visualization/action_only_dsrl
+  local_rank: 0
+  rank: 0
+  world_size: 1
+
+  use_dsrl: true
+  dsrl_mode: action_only
+  freeze_backbone: true
+  freeze_future_branch: true
+  freeze_action_decoder: true
+
+  # Priority-1 injection path: steering actor directly sets the initial
+  # action diffusion noise. This must match the LingBot action noise tensor.
+  dsrl_noise_injection_mode: initial_noise
+  dsrl_action_noise_dim: 960
+
+  # RLinf-style compact actor/critic inputs.
+  dsrl_state_dim: 30
+  dsrl_num_q_heads: 10
+  dsrl_image_latent_dim: 64
+  dsrl_state_latent_dim: 64
+  dsrl_future_latent_dim: 64
+  dsrl_future_summary_input_dim: 48
+  dsrl_hidden_dims: [128, 128, 128]
+  dsrl_use_future_latent_summary: true
+
+algorithm:
+  adv_type: embodied_sac
+  loss_type: embodied_sac
+  gamma: 0.99
+  tau: 0.005
+  actor_lr: 1.0e-4
+  critic_lr: 1.0e-4
+  alpha_lr: 1.0e-4
+  initial_alpha: 0.01
+  target_entropy: -240.0
+
+  # Keep warmup small so a single-task smoke run emits SAC metrics quickly.
+  replay_size: 4096
+  batch_size: 1
+  warmup_steps: 1
+  updates_per_step: 1
+  actor_agg_q: mean

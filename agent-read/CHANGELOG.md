@@ -31,3 +31,13 @@
 - Verified local post-training on March 16, 2026: `NGPU=1` still OOMs at optimizer-state initialization, while a 2-GPU smoke run completed `num_steps=1` and saved `checkpoint_step_1`.
 - Rewrote the post-training command section in `agent-read/posttrain-data-v1.md` to keep the verified 2-GPU command and a separate `--batch-size 2` utilization-tuning command instead of accumulating stale one-off examples.
 - Updated the post-training notes to explicitly mark `NGPU=2 + batch_size=2` as locally failing, and added `batch_size=1 + gradient_accumulation_steps=2` as the safer way to raise effective global batch.
+- Added a local `lingbot_action_only_dsrl` baseline under `wan_va/action_only_dsrl/`, including a frozen LingBot wrapper, compact steering actor / critic, local embodied-SAC trainer, and a dedicated training config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
+- Refactored `wan_va/wan_va_server.py` so future-latent generation and action sampling are separate methods, and the action path now accepts external `initial_noise` while preserving the original random-noise behavior by default.
+- Added `script/run_lingbot_action_only_dsrl.py` to run the new baseline, including mock validation that logs `use_dsrl=false`, `use_dsrl=true`, injected steering noise shape, and SAC metrics before attempting RoboTwin startup.
+- Added `agent-read/change_log_lingbot_action_only_dsrl.md`, `agent-read/implementation_report_lingbot_action_only_dsrl.md`, `agent-read/env_change_log.md`, and `agent-read/V1.2.md` for handoff-quality documentation of the new baseline.
+- Expanded the approved `lingbot-va` environment with the missing RoboTwin-side packages needed to attempt local startup (`sapien`, `mplib`, `transforms3d`, `open3d`, `trimesh`, `zarr`, `openai`, `moviepy`, `azure`, `azure-ai-inference`, `pyglet<2`, `toppra`), and recorded each change plus the failed `pytorch3d` build attempt in `agent-read/env_change_log.md`.
+- Confirmed March 16, 2026 mock validation for the new baseline:
+  - `use_dsrl=false` stayed on the original action path
+  - `use_dsrl=true` injected steering noise with shape `[1, 30, 2, 16, 1]`
+  - the local embodied-SAC trainer emitted actor / critic / alpha metrics on the first synthetic update
+- Confirmed the remaining blocker for full RoboTwin online training: the host cannot currently build `pytorch3d` for Blackwell because the available CUDA 12.1 toolchain does not support `compute_120`.

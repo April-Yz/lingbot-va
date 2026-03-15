@@ -45,6 +45,14 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - A local March 16, 2026 post-training smoke test showed that single-GPU full fine-tuning OOMs at optimizer-state initialization, while a 2-GPU run completed `num_steps=1` and saved `checkpoint_step_1` successfully.
 - `agent-read/posttrain-data-v1.md` now records both the verified 2-GPU baseline command and the next `--batch-size 2` higher-utilization command to try.
 - The latest post-training notes now also record that `NGPU=2 + batch_size=2` failed locally, and recommend `batch_size=1 + gradient_accumulation_steps=2` as the safer way to increase effective batch.
+- A new local action-only DSRL baseline now exists under `wan_va/action_only_dsrl/`, with a dedicated training entry at `script/run_lingbot_action_only_dsrl.py` and config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
+- The action-only DSRL path now injects steering through LingBot's initial action diffusion noise via `VA_Server.sample_actions(..., initial_noise=...)`, while leaving the original random-noise path intact when DSRL is disabled.
+- March 16, 2026 validation confirmed:
+  - `use_dsrl=false` still produces the original action path in mock mode
+  - `use_dsrl=true` injects steering noise with shape `[1, 30, 2, 16, 1]`
+  - local embodied-SAC metrics are emitted by the new trainer in mock mode
+- Full RoboTwin online single-task training for the new DSRL entry is still blocked on this machine by the RoboTwin `pytorch3d` dependency chain, which currently cannot be built against the available CUDA 12.1 toolchain for Blackwell `sm_120`.
+- The detailed implementation handoff for this feature is in `agent-read/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/env_change_log.md`.
 
 ## Current Evaluation Conclusions
 

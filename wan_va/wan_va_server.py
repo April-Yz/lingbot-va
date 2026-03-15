@@ -1,5 +1,6 @@
 # Copyright 2024-2025 The Robbyant Team Authors. All rights reserved.
 import argparse
+import math
 import os
 import sys
 import time
@@ -439,56 +440,70 @@ class VA_Server:
         os.makedirs(self.exp_save_root, exist_ok=True)
         torch.cuda.empty_cache()
 
-    def _infer(self, obs, frame_st_id=0):
+    def _action_noise_shape(self, frame_chunk_size=None):
+        frame_chunk_size = frame_chunk_size or self.job_config.frame_chunk_size
+        action_per_frame = getattr(
+            self,
+            "action_per_frame",
+            self.job_config.action_per_frame,
+        )
+        return (
+            1,
+            self.job_config.action_dim,
+            frame_chunk_size,
+            action_per_frame,
+            1,
+        )
+
+    def _prepare_initial_action_noise(self, initial_noise, frame_chunk_size):
+        noise_shape = self._action_noise_shape(frame_chunk_size=frame_chunk_size)
+        if initial_noise is None:
+            return torch.randn(*noise_shape, device=self.device, dtype=self.dtype)
+
+        if isinstance(initial_noise, np.ndarray):
+            initial_noise = torch.from_numpy(initial_noise)
+        elif not torch.is_tensor(initial_noise):
+            initial_noise = torch.tensor(initial_noise)
+
+        if initial_noise.numel() == math.prod(noise_shape):
+            initial_noise = initial_noise.reshape(noise_shape)
+        elif tuple(initial_noise.shape) == noise_shape[1:]:
+            initial_noise = initial_noise.unsqueeze(0)
+        elif tuple(initial_noise.shape) != noise_shape:
+            raise ValueError(
+                f"initial_noise shape {tuple(initial_noise.shape)} does not match "
+                f"expected {noise_shape} or {noise_shape[1:]}"
+            )
+
+        return initial_noise.to(device=self.device, dtype=self.dtype)
+
+    def sample_future_latents(self, obs, frame_st_id=0):
         frame_chunk_size = self.job_config.frame_chunk_size
         if frame_st_id == 0:
-            init_latent = self._encode_obs(obs)
-            self.init_latent = init_latent
+            self.init_latent = self._encode_obs(obs)
 
-        latents = torch.randn(1,
-                              48,
-                              frame_chunk_size,
-                              self.latent_height,
-                              self.latent_width,
-                              device=self.device,
-                              dtype=self.dtype)
-        actions = torch.randn(1,
-                              self.job_config.action_dim,
-                              frame_chunk_size,
-                              self.action_per_frame,
-                              1,
-                              device=self.device,
-                              dtype=self.dtype)
+        latents = torch.randn(
+            1,
+            48,
+            frame_chunk_size,
+            self.latent_height,
+            self.latent_width,
+            device=self.device,
+            dtype=self.dtype,
+        )
 
-        video_inference_step = self.job_config.num_inference_steps
-        action_inference_step = self.job_config.action_num_inference_steps
-        video_step = self.job_config.video_exec_step
+        self.scheduler.set_timesteps(self.job_config.num_inference_steps)
+        timesteps = F.pad(self.scheduler.timesteps, (0, 1), mode='constant', value=0)
+        if self.job_config.video_exec_step != -1:
+            timesteps = timesteps[:self.job_config.video_exec_step]
 
-        self.scheduler.set_timesteps(video_inference_step)
-        self.action_scheduler.set_timesteps(action_inference_step)
-        timesteps = self.scheduler.timesteps
-        action_timesteps = self.action_scheduler.timesteps
-
-        timesteps = F.pad(timesteps, (0, 1), mode='constant', value=0)
-
-        if video_step != -1:
-            timesteps = timesteps[:video_step]
-
-        action_timesteps = F.pad(
-            action_timesteps,
-            (0,
-             1),  # pad 1 element at the end (right side) of the last dimension
-            mode='constant',
-            value=0)
-
-        with (
-                torch.no_grad(),
-        ):
-            # 1. Video Generation Loop
+        with torch.no_grad():
             for i, t in enumerate(tqdm(timesteps)):
                 last_step = i == len(timesteps) - 1
-                latent_cond = init_latent[:, :, 0:1].to(
-                    self.dtype) if frame_st_id == 0 else None
+                latent_cond = (
+                    self.init_latent[:, :, 0:1].to(self.dtype)
+                    if frame_st_id == 0 else None
+                )
                 input_dict = self._prepare_latent_input(
                     latents,
                     None,
@@ -496,39 +511,63 @@ class VA_Server:
                     t,
                     latent_cond,
                     None,
-                    frame_st_id=frame_st_id)
+                    frame_st_id=frame_st_id,
+                )
 
                 video_noise_pred = self.transformer(
                     self._repeat_input_for_cfg(input_dict['latent_res_lst']),
                     update_cache=1 if last_step else 0,
                     cache_name=self.cache_name,
-                    action_mode=False)
+                    action_mode=False,
+                )
 
-                if not last_step or video_step != -1:
+                if not last_step or self.job_config.video_exec_step != -1:
                     video_noise_pred = data_seq_to_patch(
-                        self.job_config.patch_size, video_noise_pred,
-                        frame_chunk_size, self.latent_height,
-                        self.latent_width, batch_size=2 if self.use_cfg else 1)
+                        self.job_config.patch_size,
+                        video_noise_pred,
+                        frame_chunk_size,
+                        self.latent_height,
+                        self.latent_width,
+                        batch_size=2 if self.use_cfg else 1,
+                    )
                     if self.job_config.guidance_scale > 1:
-                        video_noise_pred = video_noise_pred[1:] + self.job_config.guidance_scale * (video_noise_pred[:1] - video_noise_pred[1:])
+                        video_noise_pred = video_noise_pred[1:] + self.job_config.guidance_scale * (
+                            video_noise_pred[:1] - video_noise_pred[1:]
+                        )
                     else:
                         video_noise_pred = video_noise_pred[:1]
-                    latents = self.scheduler.step(video_noise_pred,
-                                                  t,
-                                                  latents,
-                                                  return_dict=False)
+                    latents = self.scheduler.step(
+                        video_noise_pred,
+                        t,
+                        latents,
+                        return_dict=False,
+                    )
 
-                latents[:, :, 0:1] = latent_cond if frame_st_id == 0 else latents[:, :, 0:1]
+                if frame_st_id == 0:
+                    latents[:, :, 0:1] = latent_cond
 
+        return latents
+
+    def sample_actions(self, frame_st_id=0, initial_noise=None):
+        frame_chunk_size = self.job_config.frame_chunk_size
+        actions = self._prepare_initial_action_noise(initial_noise, frame_chunk_size)
+
+        self.action_scheduler.set_timesteps(self.job_config.action_num_inference_steps)
+        action_timesteps = F.pad(
+            self.action_scheduler.timesteps,
+            (0, 1),
+            mode='constant',
+            value=0,
+        )
+
+        with torch.no_grad():
             for i, t in enumerate(tqdm(action_timesteps)):
                 last_step = i == len(action_timesteps) - 1
                 action_cond = torch.zeros(
-                    [
-                        1, self.job_config.action_dim, 1,
-                        self.action_per_frame, 1
-                    ],
+                    [1, self.job_config.action_dim, 1, self.action_per_frame, 1],
                     device=self.device,
-                    dtype=self.dtype) if frame_st_id == 0 else None
+                    dtype=self.dtype,
+                ) if frame_st_id == 0 else None
 
                 input_dict = self._prepare_latent_input(
                     None,
@@ -537,29 +576,46 @@ class VA_Server:
                     t,
                     None,
                     action_cond,
-                    frame_st_id=frame_st_id)
+                    frame_st_id=frame_st_id,
+                )
                 action_noise_pred = self.transformer(
                     self._repeat_input_for_cfg(input_dict['action_res_lst']),
                     update_cache=1 if last_step else 0,
                     cache_name=self.cache_name,
-                    action_mode=True)
+                    action_mode=True,
+                )
 
                 if not last_step:
-                    action_noise_pred = rearrange(action_noise_pred,
-                                                  'b (f n) c -> b c f n 1',
-                                                  f=frame_chunk_size)
+                    action_noise_pred = rearrange(
+                        action_noise_pred,
+                        'b (f n) c -> b c f n 1',
+                        f=frame_chunk_size,
+                    )
                     if self.job_config.action_guidance_scale > 1:
-                        action_noise_pred = action_noise_pred[1:] + self.job_config.action_guidance_scale * (action_noise_pred[:1] - action_noise_pred[1:])
+                        action_noise_pred = action_noise_pred[1:] + self.job_config.action_guidance_scale * (
+                            action_noise_pred[:1] - action_noise_pred[1:]
+                        )
                     else:
                         action_noise_pred = action_noise_pred[:1]
-                    actions = self.action_scheduler.step(action_noise_pred,
-                                                         t,
-                                                         actions,
-                                                         return_dict=False)
+                    actions = self.action_scheduler.step(
+                        action_noise_pred,
+                        t,
+                        actions,
+                        return_dict=False,
+                    )
 
-                actions[:, :, 0:1] = action_cond if frame_st_id == 0 else actions[:, :, 0:1]
+                if frame_st_id == 0:
+                    actions[:, :, 0:1] = action_cond
 
         actions[:, ~self.action_mask] *= 0
+        return actions
+
+    def _infer(self, obs, frame_st_id=0):
+        latents = self.sample_future_latents(obs, frame_st_id=frame_st_id)
+        actions = self.sample_actions(
+            frame_st_id=frame_st_id,
+            initial_noise=obs.get('initial_noise'),
+        )
 
         save_async(latents, os.path.join(self.exp_save_root, f'latents_{frame_st_id}.pt'))
         save_async(actions, os.path.join(self.exp_save_root, f'actions_{frame_st_id}.pt'))
