@@ -100,6 +100,56 @@
 6. 把视频保存回 `latent-decode-episodeXXX-seedYYYY-success.mp4`
 7. 最后再写一个 `latent_decode_results.json`
 
+### 5.3 从 eval latent 到可视化视频，一共经过几步
+
+如果只看“视频 latent 从 eval 中间结果变成现在这个 mp4 可视化”这条链，当前实际是 6 步：
+
+1. server 在每个 episode 开始时 `reset`
+   - `wan_va_server.py` 会创建一个新的 `exp_save_root`
+   - 这个目录现在会通过 reset 响应回传给 client
+
+2. eval 过程中每个 chunk 推理结束时保存 latent
+   - `wan_va_server.py::_infer(...)` 会把当轮生成的视频 latent 保存成：
+     - `latents_0.pt`
+     - `latents_2.pt`
+     - `latents_4.pt`
+     - ...
+   - 这些文件就在对应 episode 的 `server_exp_save_root` 下
+
+3. client 在 episode 结束时把 latent 目录记进 manifest
+   - `eval_polict_client_openpi.py` 会把这个 episode 的：
+     - `server_exp_save_root`
+     - `success`
+     - `seed`
+     - `latent_decode_video_path`
+   - 一起写入 `latent_decode_manifest.json`
+
+4. 离线 decoder 读取 manifest
+   - `decode_saved_latents.py` 不直接参与实时 eval
+   - 它是等 eval 跑完后，再读取 `latent_decode_manifest.json`
+
+5. decoder 把多个 `latents_*.pt` 沿时间维拼起来，并喂给 VAE
+   - 它先按 `latents_0.pt`, `latents_2.pt`, `latents_4.pt` 的顺序排序
+   - 用 `torch.cat(..., dim=2)` 在时间维拼接
+   - 再用 checkpoint 里的 `vae/` 做两步处理：
+     - 按 `latents_mean / latents_std` 反归一化
+     - 调 `vae.decode(...)` 还原成视频帧
+
+6. decoder 把帧序列导出成 mp4
+   - 最终保存成：
+     - `latent-decode-episode001-seed10000-success.mp4`
+     - 这类文件
+   - 同时把结果汇总写进 `latent_decode_results.json`
+
+所以如果你后面要改这条链，最关键的 3 个落点就是：
+
+- `wan_va_server.py::_infer(...)`
+  - 决定 latent 何时保存、保存成什么张量
+- `eval_polict_client_openpi.py`
+  - 决定 episode 和 latent 目录怎么建立映射
+- `decode_saved_latents.py`
+  - 决定 latent 如何拼接、如何 decode、如何导出视频
+
 ## 6. 这次为了打通链路做了哪些代码改动
 
 ### 6.1 server 侧

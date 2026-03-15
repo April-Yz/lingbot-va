@@ -16,3 +16,4 @@
 - Added `evaluation/robotwin/decode_saved_latents.py` to decode saved `latents_*.pt` files into per-episode videos after eval.
 - Completed a fresh `click_alarmclock` eval run at `10/10` success with decoded latent videos saved into RoboTwin `eval_result/`.
 - Added `agent-read/eval-test-decoder-v1.md` as the concrete report for the March 15, 2026 eval + latent decoder run.
+- Expanded `agent-read/eval-test-decoder-v1.md` with a step-by-step description of how eval-time `latents_*.pt` files are produced, mapped into a manifest, decoded by VAE, and exported into final visualization videos.
