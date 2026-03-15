@@ -38,6 +38,11 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - The post-training converter now assumes recollected `Large_D435` RoboTwin data and validates raw camera frames at `480x640` before conversion.
 - Post-training WandB behavior now preserves existing auth, defaults the project name to `lingbot`, and supports custom run names via `WANDB_RUN_NAME`.
 - The post-training launcher now auto-detects a Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3` instead of assuming `python` is on `PATH`.
+- The post-training dataset loader no longer fans out to a 128-process initialization pool for a single local LeRobot repo; `--dataset-init-worker` can override the worker count when needed.
+- The post-training trainer now normalizes floating-point batch tensors to `config.param_dtype` before the transformer forward pass, which avoids local `Float`/`BFloat16` dtype mismatches on Blackwell.
+- The local RobotWin post-training config now overrides the transformer attention backend to `torch`, avoiding the `flex_attention` block-mask failure observed with `lingbot-va-base` on this machine.
+- The clean base checkpoint `robbyant/lingbot-va-base` is now present locally under `checkpoints/lingbot-va-base` for post-training starts that should not inherit RoboTwin post-training weights.
+- A local March 16, 2026 post-training smoke test showed that single-GPU full fine-tuning OOMs at optimizer-state initialization, while a 2-GPU run completed `num_steps=1` and saved `checkpoint_step_1` successfully.
 
 ## Current Evaluation Conclusions
 

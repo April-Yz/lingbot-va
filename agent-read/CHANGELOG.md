@@ -24,3 +24,8 @@
 - Expanded `agent-read/posttrain-data-v1.md` with the recommended RoboTwin recollection command plus the processing and post-training commands for the `Large_D435` workflow.
 - Updated post-training WandB handling so the launcher no longer overwrites `WANDB_*`, defaults `WANDB_PROJECT` to `lingbot`, and supports `WANDB_RUN_NAME` for custom run names.
 - Updated `script/run_va_posttrain.sh` to auto-detect the Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3`, and documented the explicit `PYTHON_BIN` fallback command.
+- Reduced local post-training dataset initialization fan-out by bounding LeRobot repo init workers and exposing `--dataset-init-worker` as a training override.
+- Cast floating-point training batches to `config.param_dtype` before the transformer forward pass so local post-training no longer fails on `Float` vs `BFloat16` input mismatches.
+- Overrode local RobotWin post-training to use `attn_mode='torch'` by default and added `--attn-mode` so training does not hit the `flex_attention` block-mask failure from the base checkpoint config.
+- Downloaded the clean base checkpoint `robbyant/lingbot-va-base` into `checkpoints/lingbot-va-base` for local post-training starts.
+- Verified local post-training on March 16, 2026: `NGPU=1` still OOMs at optimizer-state initialization, while a 2-GPU smoke run completed `num_steps=1` and saved `checkpoint_step_1`.

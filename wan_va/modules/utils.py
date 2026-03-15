@@ -42,10 +42,16 @@ def load_transformer(
     transformer_path,
     torch_dtype,
     torch_device,
+    attn_mode=None,
 ):
+    load_kwargs = {
+        "torch_dtype": torch_dtype,
+    }
+    if attn_mode is not None:
+        load_kwargs["attn_mode"] = attn_mode
     model = WanTransformer3DModel.from_pretrained(
         transformer_path,
-        torch_dtype=torch_dtype,
+        **load_kwargs,
     )
     return model.to(torch_device)
 

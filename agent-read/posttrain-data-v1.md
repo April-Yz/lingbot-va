@@ -150,6 +150,12 @@ The converter now assumes the recollected data already satisfies:
 - raw camera frames are `480x640`
 - camera names are still `head_camera`, `left_camera`, `right_camera`
 
+The base model used for clean post-training should exist locally at:
+
+- `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base`
+
+In this workspace it has already been downloaded from `robbyant/lingbot-va-base`.
+
 ## 7. Post-Training Command
 
 `wan_va/train.py` now supports direct CLI overrides for local dataset paths. The minimal local training command is:
@@ -169,8 +175,9 @@ NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
     --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
     --enable-wandb true
 
-  cd /home/zaijia001/vam/lingbot-va
 
+  conda activate lingbot-va
+  cd /home/zaijia001/vam/lingbot-va
   WANDB_PROJECT=lingbot \
   WANDB_RUN_NAME=baseline_place_can_basket \
   NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
@@ -180,6 +187,7 @@ NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
     --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
     --enable-wandb true \
     --save-interval 5000
+
 
 ```
 
@@ -192,21 +200,42 @@ Notes:
 - If `WANDB_PROJECT` is unset, the launcher defaults it to `lingbot`.
 - You can control the WandB run name with `WANDB_RUN_NAME`.
 - The launcher auto-detects the interpreter in this order: `PYTHON_BIN`, `${CONDA_PREFIX}/bin/python`, `python`, then `python3`.
+- The training loader now initializes LeRobot repos with a bounded worker count; for a single local repo it stays single-process instead of spawning a 128-process pool.
+- The training path now casts floating-point batch tensors to the model parameter dtype before the forward pass, avoiding the `Float` vs `BFloat16` mismatch hit in the first local smoke run.
+- The local post-training config now forces `attn_mode='torch'` by default so the base checkpoint does not try to use the `flex` backend that failed on this machine during training smoke tests.
 
-Example with WandB enabled, project `lingbot`, run name `baseline_place_can_basket`, and checkpoint saves every `5000` steps:
+Recommended command for the actual run in this workspace:
 
 ```bash
 cd /home/zaijia001/vam/lingbot-va
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket \
-NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+NGPU=2 CUDA_VISIBLE_DEVICES=1,2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
   --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
   --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
   --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
   --enable-wandb true \
+  --attn-mode torch \
+  --dataset-init-worker 1 \
   --save-interval 5000
 ```
+
+Why `NGPU=2` is the current recommendation:
+
+- A local `NGPU=1` smoke run reached the first optimizer step but OOMed when `AdamW` initialized optimizer state on a single 96 GB Blackwell GPU.
+- A local `NGPU=2` smoke run completed `num_steps=1`, logged to WandB, and saved `checkpoint_step_1` successfully.
+- The successful smoke command used:
+  - `CUDA_VISIBLE_DEVICES=1,2`
+  - `NGPU=2`
+  - `--dataset-init-worker 1`
+  - `--attn-mode torch`
+
+Successful 2-GPU smoke artifacts:
+
+- Save root: `/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean_smoke_v5_2gpu`
+- Checkpoint: `/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean_smoke_v5_2gpu/checkpoints/checkpoint_step_1/transformer`
+- WandB run: `baseline_place_can_basket_smoke_test_v5_2gpu`
 
 If you do not activate `lingbot-va` first, you can also force the interpreter explicitly:
 
@@ -221,6 +250,8 @@ NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
   --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
   --enable-wandb true \
+  --attn-mode torch \
+  --dataset-init-worker 1 \
   --save-interval 5000
 ```
 

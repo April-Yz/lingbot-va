@@ -40,17 +40,21 @@ def construct_lerobot(
 def construct_lerobot_multi_processor(config, 
                                       num_init_worker=8,
                                       ):
-    datasets_out_lst = []
     construct_func = partial(
         construct_lerobot,
         config=config,
     )
     repo_list = recursive_find_file(config.dataset_path, 'info.json')
     repo_list = [v.split('/meta/info.json')[0] for v in repo_list]
+    if not repo_list:
+        return []
+
+    num_init_worker = max(1, min(num_init_worker, len(repo_list)))
+    if num_init_worker == 1:
+        return [construct_func(repo_id) for repo_id in repo_list]
+
     with Pool(num_init_worker) as pool:
-        datasets_out_lst = pool.map(construct_func, repo_list)
-                
-    return datasets_out_lst
+        return pool.map(construct_func, repo_list)
 
 def get_relative_pose(pose):
     if torch.is_tensor(pose):
@@ -71,8 +75,10 @@ class MultiLatentLeRobotDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         config,
-        num_init_worker=128,
+        num_init_worker=None,
     ):
+        if num_init_worker is None:
+            num_init_worker = getattr(config, "dataset_init_worker", 8)
         self._datasets = construct_lerobot_multi_processor(config, 
                                                            num_init_worker, 
                                                            )

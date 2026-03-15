@@ -109,6 +109,7 @@ class Trainer:
             transformer_path,
             torch_dtype=torch.float32,
             torch_device='cpu',
+            attn_mode=getattr(config, "attn_mode", None),
         )
 
         logger.info("Setting up activation checkpointing ...")
@@ -273,7 +274,10 @@ class Trainer:
     def convert_input_format(self, input_dict):
         """Convert input dict to match transformer input format if needed."""
         for key, value in input_dict.items():
-            input_dict[key] = value.to(self.device)#.to(self.dtype)
+            value = value.to(self.device)
+            if torch.is_tensor(value) and value.is_floating_point():
+                value = value.to(self.dtype)
+            input_dict[key] = value
         return input_dict
 
     def compute_loss(self,
@@ -562,6 +566,10 @@ def run(args):
         config.learning_rate = args.learning_rate
     if args.load_worker is not None:
         config.load_worker = args.load_worker
+    if args.dataset_init_worker is not None:
+        config.dataset_init_worker = args.dataset_init_worker
+    if args.attn_mode is not None:
+        config.attn_mode = args.attn_mode
     if args.save_interval is not None:
         config.save_interval = args.save_interval
 
@@ -598,6 +606,8 @@ def main():
     parser.add_argument("--num-steps", type=int, default=None, help="Override config.num_steps.")
     parser.add_argument("--learning-rate", type=float, default=None, help="Override config.learning_rate.")
     parser.add_argument("--load-worker", type=int, default=None, help="Override config.load_worker.")
+    parser.add_argument("--dataset-init-worker", type=int, default=None, help="Override the LeRobot repo initialization worker count.")
+    parser.add_argument("--attn-mode", type=str, default=None, help="Override transformer attention backend, e.g. torch or flex.")
     parser.add_argument("--save-interval", type=int, default=None, help="Override config.save_interval.")
 
     args = parser.parse_args()
