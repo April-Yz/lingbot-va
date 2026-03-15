@@ -36,6 +36,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/eval-test-decoder-v1.md`.
 - The current raw-data-to-posttrain workflow and the concrete `place_can_basket` processing run are documented in `agent-read/posttrain-data-v1.md`.
 - The post-training converter now assumes recollected `Large_D435` RoboTwin data and validates raw camera frames at `480x640` before conversion.
+- Post-training WandB behavior now preserves existing auth, defaults the project name to `lingbot`, and supports custom run names via `WANDB_RUN_NAME`.
 
 ## Current Evaluation Conclusions
 

@@ -99,7 +99,7 @@ This repository does not modify `/home/zaijia001/ssd/RoboTwin`, but the expected
 
 ```bash
 cd /home/zaijia001/ssd/RoboTwin
-bash collect_data.sh place_can_basket demo_clean 0
+bash collect_data.sh place_can_basket demo_clean_large_d435 0
 ```
 
 Important assumption for the recollected `demo_clean`:
@@ -120,6 +120,16 @@ cd /home/zaijia001/vam/lingbot-va
   --instruction-key seen \
   --instruction-index 0 \
   --overwrite
+
+/home/zaijia001/ssd/miniconda3/envs/lingbot-va/bin/python script/prepare_robotwin_posttrain.py \
+  --raw-dir /home/zaijia001/ssd/RoboTwin/data/place_can_basket/demo_clean_large_d435 \
+  --bundle-dir /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+  --repo-id place_can_basket_demo_clean_lerobot \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
+  --instruction-key seen \
+  --instruction-index 0 \
+  --overwrite
+
 ```
 
 The generated bundle should look like:
@@ -151,6 +161,15 @@ NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
   --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
   --enable-wandb false
+
+  NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+    --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+    --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+    --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+    --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
+    --enable-wandb true
+
+
 ```
 
 Notes:
@@ -158,6 +177,24 @@ Notes:
 - `dataset-path` points to the bundle root, not directly to the LeRobot repo.
 - The loader recursively finds `meta/info.json` under that root.
 - The default base config still inherits RobotWin normalization and camera layout.
+- `script/run_va_posttrain.sh` now preserves your existing WandB login state instead of overwriting `WANDB_*` with placeholders.
+- If `WANDB_PROJECT` is unset, the launcher defaults it to `lingbot`.
+- You can control the WandB run name with `WANDB_RUN_NAME`.
+
+Example with WandB enabled, project `lingbot`, run name `baseline_place_can_basket`, and checkpoint saves every `5000` steps:
+
+```bash
+cd /home/zaijia001/vam/lingbot-va
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=baseline_place_can_basket \
+NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+  --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+  --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+  --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
+  --enable-wandb true \
+  --save-interval 5000
+```
 
 ## 8. What To Change For Another Task
 

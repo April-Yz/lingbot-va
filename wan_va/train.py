@@ -61,17 +61,30 @@ def str2bool(value):
 class Trainer:
     def __init__(self, config):
         if config.enable_wandb and config.rank == 0:
-            wandb.login(host=os.environ['WANDB_BASE_URL'], key=os.environ['WANDB_API_KEY'])
+            wandb_base_url = os.getenv("WANDB_BASE_URL")
+            wandb_api_key = os.getenv("WANDB_API_KEY")
+            wandb_team_name = os.getenv("WANDB_TEAM_NAME")
+            wandb_project = os.getenv("WANDB_PROJECT", "lingbot")
+            wandb_run_name = os.getenv("WANDB_RUN_NAME")
+
+            if wandb_api_key:
+                login_kwargs = {"key": wandb_api_key}
+                if wandb_base_url:
+                    login_kwargs["host"] = wandb_base_url
+                wandb.login(**login_kwargs)
+
             self.wandb = wandb
-            self.wandb.init(
-                entity=os.environ["WANDB_TEAM_NAME"],
-                project=os.getenv("WANDB_PROJECT", "va_robotwin"),
-                # dir=log_dir,
-                config=config,
-                mode="online",
-                name='test_lln'
-                # name=os.path.basename(os.path.normpath(job_config.job.dump_folder))
-            )
+            init_kwargs = {
+                "project": wandb_project,
+                "config": config,
+                "mode": "online",
+            }
+            if wandb_team_name:
+                init_kwargs["entity"] = wandb_team_name
+            if wandb_run_name:
+                init_kwargs["name"] = wandb_run_name
+
+            self.wandb.init(**init_kwargs)
             logger.info("WandB logging enabled")
         self.step = 0
         self.config = config
