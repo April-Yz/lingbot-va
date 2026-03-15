@@ -29,3 +29,4 @@
 - Overrode local RobotWin post-training to use `attn_mode='torch'` by default and added `--attn-mode` so training does not hit the `flex_attention` block-mask failure from the base checkpoint config.
 - Downloaded the clean base checkpoint `robbyant/lingbot-va-base` into `checkpoints/lingbot-va-base` for local post-training starts.
 - Verified local post-training on March 16, 2026: `NGPU=1` still OOMs at optimizer-state initialization, while a 2-GPU smoke run completed `num_steps=1` and saved `checkpoint_step_1`.
+- Rewrote the post-training command section in `agent-read/posttrain-data-v1.md` to keep the verified 2-GPU command and a separate `--batch-size 2` utilization-tuning command instead of accumulating stale one-off examples.

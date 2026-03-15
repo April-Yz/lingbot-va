@@ -158,37 +158,53 @@ In this workspace it has already been downloaded from `robbyant/lingbot-va-base`
 
 ## 7. Post-Training Command
 
-`wan_va/train.py` now supports direct CLI overrides for local dataset paths. The minimal local training command is:
+`wan_va/train.py` now supports direct CLI overrides for local dataset paths. In this workspace the current recommendations are:
+
+### 7.1 Verified Stable Command
+
+This is the command shape that has already been validated locally. A 2-GPU smoke run completed `num_steps=1`, logged to WandB, and saved `checkpoint_step_1` successfully.
 
 ```bash
+conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
-NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=baseline_place_can_basket \
+CUDA_VISIBLE_DEVICES=2,3 \
+NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
   --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
   --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
-  --enable-wandb false
+  --enable-wandb true \
+  --attn-mode torch \
+  --dataset-init-worker 1 \
+  --save-interval 5000
+```
 
-  NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
-    --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
-    --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
-    --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
-    --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
-    --enable-wandb true
+### 7.2 Higher-Utilization Attempt
 
+If you want to use more of each GPU, the first thing to try is increasing the per-GPU batch size from `1` to `2`.
 
-  conda activate lingbot-va
-  cd /home/zaijia001/vam/lingbot-va
-  WANDB_PROJECT=lingbot \
-  WANDB_RUN_NAME=baseline_place_can_basket \
-  NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
-    --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
-    --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
-    --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
-    --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
-    --enable-wandb true \
-    --save-interval 5000
+This has not been fully validated end-to-end in this workspace yet, so treat it as the next tuning candidate rather than the baseline command.
 
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
 
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=baseline_place_can_basket_bs2 \
+CUDA_VISIBLE_DEVICES=2,3 \
+NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+  --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+  --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+  --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean_bs2 \
+  --enable-wandb true \
+  --attn-mode torch \
+  --dataset-init-worker 1 \
+  --batch-size 2 \
+  --save-interval 5000
 ```
 
 Notes:
@@ -203,23 +219,6 @@ Notes:
 - The training loader now initializes LeRobot repos with a bounded worker count; for a single local repo it stays single-process instead of spawning a 128-process pool.
 - The training path now casts floating-point batch tensors to the model parameter dtype before the forward pass, avoiding the `Float` vs `BFloat16` mismatch hit in the first local smoke run.
 - The local post-training config now forces `attn_mode='torch'` by default so the base checkpoint does not try to use the `flex` backend that failed on this machine during training smoke tests.
-
-Recommended command for the actual run in this workspace:
-
-```bash
-cd /home/zaijia001/vam/lingbot-va
-WANDB_PROJECT=lingbot \
-WANDB_RUN_NAME=baseline_place_can_basket \
-NGPU=2 CUDA_VISIBLE_DEVICES=1,2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
-  --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
-  --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
-  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
-  --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
-  --enable-wandb true \
-  --attn-mode torch \
-  --dataset-init-worker 1 \
-  --save-interval 5000
-```
 
 Why `NGPU=2` is the current recommendation:
 
@@ -244,7 +243,8 @@ cd /home/zaijia001/vam/lingbot-va
 PYTHON_BIN=/home/zaijia001/ssd/miniconda3/envs/lingbot-va/bin/python \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket \
-NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+CUDA_VISIBLE_DEVICES=2,3 \
+NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
   --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
   --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
