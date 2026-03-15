@@ -58,6 +58,22 @@ def write_json(data: dict, fpath: Path) -> None:
     with open(fpath, "w") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
+
+def build_episode_artifact_name(prefix: str, episode_idx: int, success: bool, seed: int, ext: str = ".mp4") -> str:
+    outcome = "success" if success else "fail"
+    return f"{prefix}episode{episode_idx:03d}-seed{seed}-{outcome}{ext}"
+
+
+def rename_eval_video_with_outcome(video_dir: Path, episode_idx: int, success: bool, seed: int) -> str | None:
+    original_path = Path(video_dir) / f"episode{episode_idx}.mp4"
+    if not original_path.exists():
+        return None
+    renamed_path = Path(video_dir) / build_episode_artifact_name("", episode_idx, success, seed)
+    if renamed_path.exists():
+        renamed_path.unlink()
+    original_path.rename(renamed_path)
+    return str(renamed_path.resolve())
+
 def add_title_bar(img, text, font_scale=0.8, thickness=2):
     """Add a black title bar with text above the image"""
     h, w, _ = img.shape
@@ -368,6 +384,7 @@ def main(usr_args):
         video_size = str(camera_config["w"]) + "x" + str(camera_config["h"])
         video_save_dir.mkdir(parents=True, exist_ok=True)
         args["eval_video_save_dir"] = video_save_dir
+    args["episode_manifest_path"] = str((save_dir / "latent_decode_manifest.json").resolve())
 
     print("============= Config =============\n")
     print("\033[95mMessy Table:\033[0m " + str(args["domain_randomization"]["cluttered_table"]))
@@ -418,7 +435,8 @@ def main(usr_args):
     with open(file_path, "w") as file:
         file.write(f"Timestamp: {current_time}\n\n")
         file.write(f"Instruction Type: {instruction_type}\n\n")
-        file.write("\n".join(map(str, np.array(suc_nums) / test_num)))
+        file.write(f"Success Rate: {float(np.array(suc_nums)[0] / test_num):.4f}\n\n")
+        file.write(f"Episode Manifest: {args['episode_manifest_path']}\n")
 
     print(f"Data has been saved to {file_path}")
 
@@ -464,6 +482,7 @@ def eval_policy(task_name,
     now_id = 0
     succ_seed = 0
     suc_test_seed_list = []
+    episode_records = []
 
 
     now_seed = st_seed
@@ -541,7 +560,8 @@ def eval_policy(task_name,
         succ = False
 
         prompt = TASK_ENV.get_instruction()
-        ret = model.infer(dict(reset = True, prompt=prompt, save_visualization=save_visualization))
+        reset_ret = model.infer(dict(reset = True, prompt=prompt, save_visualization=save_visualization))
+        server_exp_save_root = reset_ret.get("exp_save_root") if isinstance(reset_ret, dict) else None
         
         first = True
         full_obs_list = []
@@ -625,8 +645,15 @@ def eval_policy(task_name,
             save_path=str(out_img_file),
             fps=15 # Suggest adjusting fps based on simulation step
         )
+        eval_video_path = None
         if TASK_ENV.eval_video_path is not None:
             TASK_ENV._del_eval_video_ffmpeg()
+            eval_video_path = rename_eval_video_with_outcome(
+                Path(TASK_ENV.eval_video_path),
+                TASK_ENV.test_num,
+                succ,
+                now_seed,
+            )
 
         if succ:
             TASK_ENV.suc += 1
@@ -650,6 +677,31 @@ def eval_policy(task_name,
           "total_num": float(TASK_ENV.test_num),
           "succ_rate": float(TASK_ENV.suc / TASK_ENV.test_num),
         }, out_json_file)
+
+        episode_records.append({
+            "episode_idx": TASK_ENV.test_num,
+            "seed": int(now_seed),
+            "success": bool(succ),
+            "prompt": prompt,
+            "server_exp_save_root": server_exp_save_root,
+            "eval_video_path": eval_video_path,
+            "comparison_video_path": str(out_img_file.resolve()),
+            "latent_decode_video_path": str(
+                Path(TASK_ENV.eval_video_path)
+                / build_episode_artifact_name("latent-decode-", TASK_ENV.test_num, succ, now_seed)
+            ).resolve() if TASK_ENV.eval_video_path is not None else None,
+        })
+        write_json(
+            {
+                "task_name": task_name,
+                "policy_name": args["policy_name"],
+                "task_config": args["task_config"],
+                "ckpt_setting": args["ckpt_setting"],
+                "st_seed": int(st_seed),
+                "episodes": episode_records,
+            },
+            Path(args["episode_manifest_path"]),
+        )
         
         print(
             f"\033[93m{task_name}\033[0m | \033[94m{args['policy_name']}\033[0m | \033[92m{args['task_config']}\033[0m | \033[91m{args['ckpt_setting']}\033[0m\n"

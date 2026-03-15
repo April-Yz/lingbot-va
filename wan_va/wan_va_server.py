@@ -611,7 +611,7 @@ class VA_Server:
         if reset:
             logger.info(f"******************* Reset server ******************")
             self._reset(prompt=prompt)
-            return dict()
+            return dict(exp_name=self.exp_name, exp_save_root=os.path.abspath(self.exp_save_root))
         elif compute_kv_cache:
             logger.info(
                 f"################# Compute KV Cache #################")

@@ -32,10 +32,12 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - `lerobot==0.3.3` remains installed for post-training support, but its published dependency constraints conflict with the upstream LingBot-VA PyTorch requirement. Follow the repository README and treat it as a `--no-deps` style add-on.
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.
 - The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/lingbot-v0.md`.
+- The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/eval-test-decoder-v1.md`.
 
 ## Current Evaluation Conclusions
 
 - `click_bell` minimal eval was validated end-to-end earlier.
 - `click_alarmclock` completed `10/10` successfully under the current `lingbot-va + RoboTwin-lingbot` setup.
+- A fresh `click_alarmclock` eval rerun on March 15, 2026 also completed `10/10`, now with success-tagged `eval_result` videos, a per-episode latent decode manifest, and decoded latent videos saved alongside the raw eval videos.
 - `press_stapler` had reached `9/9` success in `res.json` before the user's interruption/abnormal close.
 - Heavier tasks such as `turn_switch` are still runnable in principle, but are much slower on this machine because RoboTwin must fall back from `curobo` to `MPLib`.
