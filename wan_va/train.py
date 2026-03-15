@@ -47,6 +47,17 @@ from dataset import MultiLatentLeRobotDataset
 import gc
 
 
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    lowered = value.lower()
+    if lowered in {"1", "true", "yes", "y", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "n", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Invalid boolean value: {value}")
+
+
 class Trainer:
     def __init__(self, config):
         if config.enable_wandb and config.rank == 0:
@@ -518,6 +529,28 @@ def run(args):
 
     if args.save_root is not None:
         config.save_root = args.save_root
+    if args.dataset_path is not None:
+        config.dataset_path = args.dataset_path
+    if args.empty_emb_path is not None:
+        config.empty_emb_path = args.empty_emb_path
+    if args.model_path is not None:
+        config.wan22_pretrained_model_name_or_path = args.model_path
+    if args.enable_wandb is not None:
+        config.enable_wandb = args.enable_wandb
+    if args.resume_from is not None:
+        config.resume_from = args.resume_from
+    if args.batch_size is not None:
+        config.batch_size = args.batch_size
+    if args.gradient_accumulation_steps is not None:
+        config.gradient_accumulation_steps = args.gradient_accumulation_steps
+    if args.num_steps is not None:
+        config.num_steps = args.num_steps
+    if args.learning_rate is not None:
+        config.learning_rate = args.learning_rate
+    if args.load_worker is not None:
+        config.load_worker = args.load_worker
+    if args.save_interval is not None:
+        config.save_interval = args.save_interval
 
     if rank == 0:
         logger.info(f"Using config: {args.config_name}")
@@ -542,6 +575,17 @@ def main():
         default=None,
         help="Root directory for saving checkpoints",
     )
+    parser.add_argument("--dataset-path", type=str, default=None, help="Root directory containing empty_emb.pt and one or more LeRobot repos.")
+    parser.add_argument("--empty-emb-path", type=str, default=None, help="Path to empty_emb.pt.")
+    parser.add_argument("--model-path", type=str, default=None, help="Local LingBot/Wan model directory used as the training initialization.")
+    parser.add_argument("--resume-from", type=str, default=None, help="Checkpoint directory to resume from.")
+    parser.add_argument("--enable-wandb", type=str2bool, default=None, help="Override config.enable_wandb.")
+    parser.add_argument("--batch-size", type=int, default=None, help="Override config.batch_size.")
+    parser.add_argument("--gradient-accumulation-steps", type=int, default=None, help="Override config.gradient_accumulation_steps.")
+    parser.add_argument("--num-steps", type=int, default=None, help="Override config.num_steps.")
+    parser.add_argument("--learning-rate", type=float, default=None, help="Override config.learning_rate.")
+    parser.add_argument("--load-worker", type=int, default=None, help="Override config.load_worker.")
+    parser.add_argument("--save-interval", type=int, default=None, help="Override config.save_interval.")
 
     args = parser.parse_args()
     run(args)

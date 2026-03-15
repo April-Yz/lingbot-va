@@ -8,6 +8,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - `evaluation/robotwin/`: RoboTwin evaluation launch scripts.
 - `script/`: launch helpers for inference and training workflows.
 - `example/`: sample inputs for demos and evaluation.
+- `script/prepare_robotwin_posttrain.py`: local RoboTwin raw-data to LingBot post-training bundle converter.
 
 ## Supported Environment Assumptions
 
@@ -33,6 +34,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.
 - The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/lingbot-v0.md`.
 - The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/eval-test-decoder-v1.md`.
+- The current raw-data-to-posttrain workflow and the concrete `place_can_basket` processing run are documented in `agent-read/posttrain-data-v1.md`.
+- The post-training converter now assumes recollected `Large_D435` RoboTwin data and validates raw camera frames at `480x640` before conversion.
 
 ## Current Evaluation Conclusions
 
