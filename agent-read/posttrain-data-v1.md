@@ -186,7 +186,7 @@ NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
 
 If you want to use more of each GPU, the first thing to try is increasing the per-GPU batch size from `1` to `2`.
 
-This has not been fully validated end-to-end in this workspace yet, so treat it as the next tuning candidate rather than the baseline command.
+This was attempted locally and did not remain stable in this workspace. The 2-GPU `batch_size=2` run failed almost immediately after training started, so it should currently be treated as a known non-working setting rather than the recommended next step.
 
 ```bash
 conda activate lingbot-va
@@ -207,6 +207,43 @@ NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --save-interval 5000
 ```
 
+Current status of this command:
+
+- `NGPU=2 + batch_size=2` failed locally on March 16, 2026.
+- This does not mean the codebase fundamentally rejects `batch_size=2`; it means that on this machine, with this model and current FSDP setup, the per-GPU activation footprint at `batch_size=2` was not stable enough to keep training running.
+
+### 7.3 Recommended Way To Increase Effective Batch
+
+If you want a larger effective batch without pushing per-GPU activation memory as hard as `batch_size=2`, the safer next step is to keep per-GPU batch size at `1` and increase gradient accumulation:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=baseline_place_can_basket_accum2 \
+CUDA_VISIBLE_DEVICES=2,3 \
+NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+  --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+  --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+  --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean_accum2 \
+  --enable-wandb true \
+  --attn-mode torch \
+  --dataset-init-worker 1 \
+  --batch-size 1 \
+  --gradient-accumulation-steps 2 \
+  --save-interval 5000
+```
+
+Why this is the safer scaling path:
+
+- `batch_size` here is per GPU, not global.
+- `NGPU=2 + batch_size=1` already gives a global batch of `2`.
+- `NGPU=2 + batch_size=2` raises the per-GPU activation memory directly, which is why it is the first configuration to fail.
+- `NGPU=2 + batch_size=1 + gradient_accumulation_steps=2` keeps the same per-GPU memory pattern as the stable run, but increases effective global batch to `4`.
+- In short: accumulation grows effective batch through extra optimizer delay, while `batch_size=2` grows instantaneous memory pressure on every GPU.
+
 Notes:
 
 - `dataset-path` points to the bundle root, not directly to the LeRobot repo.
@@ -219,6 +256,10 @@ Notes:
 - The training loader now initializes LeRobot repos with a bounded worker count; for a single local repo it stays single-process instead of spawning a 128-process pool.
 - The training path now casts floating-point batch tensors to the model parameter dtype before the forward pass, avoiding the `Float` vs `BFloat16` mismatch hit in the first local smoke run.
 - The local post-training config now forces `attn_mode='torch'` by default so the base checkpoint does not try to use the `flex` backend that failed on this machine during training smoke tests.
+- `batch_size` is per GPU, not global batch.
+- The currently verified stable setting is `NGPU=2 + batch_size=1`.
+- The attempted `NGPU=2 + batch_size=2` run failed locally and should not be treated as the default recommendation.
+- The next safer scaling step is `batch_size=1 + gradient_accumulation_steps=2`.
 
 Why `NGPU=2` is the current recommendation:
 

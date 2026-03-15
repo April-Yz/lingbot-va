@@ -30,3 +30,4 @@
 - Downloaded the clean base checkpoint `robbyant/lingbot-va-base` into `checkpoints/lingbot-va-base` for local post-training starts.
 - Verified local post-training on March 16, 2026: `NGPU=1` still OOMs at optimizer-state initialization, while a 2-GPU smoke run completed `num_steps=1` and saved `checkpoint_step_1`.
 - Rewrote the post-training command section in `agent-read/posttrain-data-v1.md` to keep the verified 2-GPU command and a separate `--batch-size 2` utilization-tuning command instead of accumulating stale one-off examples.
+- Updated the post-training notes to explicitly mark `NGPU=2 + batch_size=2` as locally failing, and added `batch_size=1 + gradient_accumulation_steps=2` as the safer way to raise effective global batch.

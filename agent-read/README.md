@@ -44,6 +44,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - The clean base checkpoint `robbyant/lingbot-va-base` is now present locally under `checkpoints/lingbot-va-base` for post-training starts that should not inherit RoboTwin post-training weights.
 - A local March 16, 2026 post-training smoke test showed that single-GPU full fine-tuning OOMs at optimizer-state initialization, while a 2-GPU run completed `num_steps=1` and saved `checkpoint_step_1` successfully.
 - `agent-read/posttrain-data-v1.md` now records both the verified 2-GPU baseline command and the next `--batch-size 2` higher-utilization command to try.
+- The latest post-training notes now also record that `NGPU=2 + batch_size=2` failed locally, and recommend `batch_size=1 + gradient_accumulation_steps=2` as the safer way to increase effective batch.
 
 ## Current Evaluation Conclusions
 
