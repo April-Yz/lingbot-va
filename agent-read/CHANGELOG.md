@@ -23,3 +23,4 @@
 - Tightened `script/prepare_robotwin_posttrain.py` to enforce the recollected `Large_D435` raw camera size (`480x640`) instead of adapting to smaller legacy frames.
 - Expanded `agent-read/posttrain-data-v1.md` with the recommended RoboTwin recollection command plus the processing and post-training commands for the `Large_D435` workflow.
 - Updated post-training WandB handling so the launcher no longer overwrites `WANDB_*`, defaults `WANDB_PROJECT` to `lingbot`, and supports `WANDB_RUN_NAME` for custom run names.
+- Updated `script/run_va_posttrain.sh` to auto-detect the Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3`, and documented the explicit `PYTHON_BIN` fallback command.

@@ -169,6 +169,17 @@ NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
     --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
     --enable-wandb true
 
+  cd /home/zaijia001/vam/lingbot-va
+
+  WANDB_PROJECT=lingbot \
+  WANDB_RUN_NAME=baseline_place_can_basket \
+  NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+    --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+    --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+    --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+    --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
+    --enable-wandb true \
+    --save-interval 5000
 
 ```
 
@@ -180,11 +191,28 @@ Notes:
 - `script/run_va_posttrain.sh` now preserves your existing WandB login state instead of overwriting `WANDB_*` with placeholders.
 - If `WANDB_PROJECT` is unset, the launcher defaults it to `lingbot`.
 - You can control the WandB run name with `WANDB_RUN_NAME`.
+- The launcher auto-detects the interpreter in this order: `PYTHON_BIN`, `${CONDA_PREFIX}/bin/python`, `python`, then `python3`.
 
 Example with WandB enabled, project `lingbot`, run name `baseline_place_can_basket`, and checkpoint saves every `5000` steps:
 
 ```bash
 cd /home/zaijia001/vam/lingbot-va
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=baseline_place_can_basket \
+NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
+  --dataset-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean \
+  --empty-emb-path /home/zaijia001/ssd/RoboTwin/data/place_can_basket/lingbot-posttrain-demo_clean/empty_emb.pt \
+  --model-path /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-base \
+  --save-root /home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean \
+  --enable-wandb true \
+  --save-interval 5000
+```
+
+If you do not activate `lingbot-va` first, you can also force the interpreter explicitly:
+
+```bash
+cd /home/zaijia001/vam/lingbot-va
+PYTHON_BIN=/home/zaijia001/ssd/miniconda3/envs/lingbot-va/bin/python \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket \
 NGPU=1 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
