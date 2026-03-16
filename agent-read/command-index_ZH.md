@@ -89,6 +89,65 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 
 - `agent-read/baseline/lingbot-v0.md`
 
+### 3.1 轻任务的快速对照命令
+
+如果你想先快速确认“官方 checkpoint 路径 + websocket eval 链路”还健康，建议先跑轻一点的任务：
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name click_bell \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_official_posttrain_click_bell \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29056
+```
+
+这条命令适合先做 sanity check，再决定要不要继续花时间压 `place_can_basket` 这种重任务。
+
+### 3.2 为什么重任务会明显更慢
+
+在当前工作区里，`place_can_basket` 比 `click_bell` 慢很多，主要原因是：
+
+- 任务本身是更重的双臂任务
+- `expert_check=true` 时，会先跑任务自己的 expert seed 过滤路径
+- 当前本机 `curobo` 还不可用，RoboTwin 会回退到 `MPLib`
+
+当前 `RoboTwin-lingbot` 环境本身的运行时其实是：
+
+- PyTorch：`2.9.0+cu128`
+- torch 的 CUDA runtime tag：`12.8`
+
+但本地 Curobo 真正拿来 JIT 编译扩展时调用的 `nvcc` 仍然是：
+
+- `/home/zaijia001/ssd/cuda-12.1/bin/nvcc`
+
+所以现在的问题不是“conda 环境完全没有 CUDA 12.8”。真正的问题是：
+
+- Curobo 的扩展编译链路还在走 CUDA 12.1 toolchain
+- 机器是 Blackwell
+- PyTorch runtime 又更高
+
+这会同时导致：
+
+- 旧 `.so` 的 ABI 不匹配
+- 本地 JIT rebuild 失败
+
+因此当前重任务只能走 `MPLib` fallback，看起来就会慢很多。
+
 ## 4. 评测本地继续训练出来的 Post-Train Checkpoint
 
 Server：
@@ -159,7 +218,45 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - `agent-read/baseline/posttrain-data-v1_ZH.md`
 - `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1_ZH.md`
 
-## 5. Action-Only V1 训练
+## 5. 并行评测时如何改端口
+
+如果你想同时评测两组不同 checkpoint 或不同任务，每个 server 都应该用不同的：
+
+- websocket 端口
+- torch distributed 的 master port
+
+例如 server A：
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+START_PORT=29058 \
+MASTER_PORT=29068 \
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
+CUDA_VISIBLE_DEVICES=1 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+例如 server B：
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+START_PORT=29059 \
+MASTER_PORT=29069 \
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
+CUDA_VISIBLE_DEVICES=2 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+对应 client 端要用匹配的 `--port`：
+
+- server A -> `--port 29058`
+- server B -> `--port 29059`
+
+## 6. Action-Only V1 训练
 
 ```bash
 conda activate lingbot-va

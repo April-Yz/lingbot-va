@@ -55,6 +55,18 @@ cd /home/zaijia001/vam/lingbot-va
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
 CUDA_VISIBLE_DEVICES=1 \
 bash evaluation/robotwin/launch_server.sh
+
+
+  conda activate lingbot-va
+  cd /home/zaijia001/vam/lingbot-va
+  START_PORT=29058 \
+  MASTER_PORT=29068 \
+  MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
+  CUDA_VISIBLE_DEVICES=3 \
+  bash evaluation/robotwin/launch_server.sh
+
+
+
 ```
 
 ### client

@@ -85,3 +85,7 @@
 - Added a bilingual quick command index:
   - `agent-read/command-index.md`
   - `agent-read/command-index_ZH.md`
+- Expanded the bilingual command index with:
+  - a light-task official-checkpoint comparison command (`click_bell`)
+  - a concrete explanation of why `place_can_basket` is much slower under the current Curobo fallback state
+  - explicit multi-server port override examples using `START_PORT` and `MASTER_PORT`
