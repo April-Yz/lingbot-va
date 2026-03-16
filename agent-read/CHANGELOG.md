@@ -50,3 +50,21 @@
   - replay insertion and SAC updates were logged at global steps `2`, `3`, and `4`
   - the run exited cleanly with `current_run_status: "finished_no_success"` and no residual process
 - Added `agent-read/action_only_v1.4_gap_zh.md` to compare the current action-only baseline against the stricter V1.4 task spec without changing runtime behavior, and to list the remaining doc, validation, and RLinf-integration gaps.
+- Added the V1 bilingual document set:
+  - `task_spec_lingbot_action_only_dsrl_V1_en.md`
+  - `task_spec_lingbot_action_only_dsrl_V1_zh.md`
+  - `implementation_report_lingbot_action_only_dsrl_V1_en.md`
+  - `implementation_report_lingbot_action_only_dsrl_V1_zh.md`
+  - `change_log_lingbot_action_only_dsrl_V1_en.md`
+  - `change_log_lingbot_action_only_dsrl_V1_zh.md`
+  - `env_change_log_V1_en.md`
+  - `env_change_log_V1_zh.md`
+- Recorded the direct V1 action-only training command in the new bilingual task spec and implementation report.
+- Ran original LingBot eval regression after the action-only changes:
+  - fresh `click_bell` smoke run
+  - result `1/1`
+  - metric file `/home/zaijia001/vam/RoboTwin-lingbot/results_regression_eval/stseed-10000/metrics/click_bell/res.json`
+- Ran original LingBot post-train regression after the action-only changes:
+  - `MASTER_PORT=29621`, `CUDA_VISIBLE_DEVICES=0,1`, `NGPU=2`
+  - `--num-steps 1 --save-interval 1`
+  - checkpoint saved at `/home/zaijia001/vam/lingbot-va/train_out/posttrain_regression_smoke/checkpoints/checkpoint_step_1/transformer`

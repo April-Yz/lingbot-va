@@ -55,6 +55,19 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - `pytorch3d` still is not installed on this machine, but `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
 - The detailed implementation handoff for this feature is in `agent-read/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/env_change_log.md`.
 - A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/action_only_v1.4_gap_zh.md`.
+- The V1 bilingual document set is now available under:
+  - `agent-read/task_spec_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/task_spec_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/implementation_report_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/implementation_report_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/change_log_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/change_log_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/env_change_log_V1_en.md`
+  - `agent-read/env_change_log_V1_zh.md`
+- The direct V1 action-only training command is documented in both `task_spec_lingbot_action_only_dsrl_V1_en.md` and `task_spec_lingbot_action_only_dsrl_V1_zh.md`.
+- March 16, 2026 regression validation after the action-only changes confirmed:
+  - original LingBot RoboTwin eval still works with a fresh `click_bell` smoke run at `1/1`
+  - original LingBot post-train still works with a fresh `num_steps=1` 2-GPU smoke run that saved `checkpoint_step_1`
 
 ## Current Evaluation Conclusions
 
