@@ -324,6 +324,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - RoboTwin 侧保持在 `RoboTwin-lingbot` 环境里
 - 通过 websocket 调用 LingBot server
 - 输出 metrics 和 rollout 视频到 `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
+- client 入口现在会同时把 `lingbot-va` 仓库根目录和 `ROBOTWIN_ROOT` 加进 `sys.path`，所以即使你当前 shell 在 `RoboTwin-lingbot` 目录下，这条绝对路径命令也可以直接运行
 
 ### 10.3 如何扩大量评测
 

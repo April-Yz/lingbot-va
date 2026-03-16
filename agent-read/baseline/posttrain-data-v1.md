@@ -370,6 +370,7 @@ What this does:
 - keeps the RoboTwin side in the `RoboTwin-lingbot` environment
 - evaluates the post-train checkpoint through the normal LingBot server/client split
 - writes metrics and rollout videos under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
+- the client entry now prepends both the `lingbot-va` repo root and `ROBOTWIN_ROOT` to `sys.path`, so this absolute-path command is valid even when your current shell directory is `RoboTwin-lingbot`
 
 ### 8.3 Scaling The Eval
 

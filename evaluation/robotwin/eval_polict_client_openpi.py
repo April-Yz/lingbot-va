@@ -6,6 +6,10 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import cv2
 from pathlib import Path
 
+lingbot_root = Path(__file__).resolve().parents[2]
+if str(lingbot_root) not in sys.path:
+    sys.path.insert(0, str(lingbot_root))
+
 robowin_root = Path(
     os.environ.get("ROBOTWIN_ROOT", "/home/zaijia001/vam/RoboTwin-lingbot")
 ).expanduser().resolve()

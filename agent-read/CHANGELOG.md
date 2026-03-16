@@ -76,3 +76,4 @@
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`
   - `agent-read/baseline/posttrain-data-v1_ZH.md`
 - Corrected the post-train checkpoint-eval flow so `MODEL_PATH` can point at a training checkpoint root that only contains `transformer/`; the server now keeps loading `vae/`, `tokenizer/`, and `text_encoder/` from the configured base model root.
+- Corrected the RoboTwin eval client entry so it prepends the local `lingbot-va` repo root to `sys.path`; the documented absolute-path client command now works even when invoked from the `RoboTwin-lingbot` working directory.
