@@ -58,6 +58,9 @@ Per step:
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+WANDB_TEAM_NAME=haoyuan-lingbot \
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=action_only_click_bell_v1 \
 CUDA_VISIBLE_DEVICES=1 \
 python script/run_lingbot_action_only_dsrl.py \
   --config examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml

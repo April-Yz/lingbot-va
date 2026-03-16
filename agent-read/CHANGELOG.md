@@ -34,6 +34,7 @@
 - Added a local `lingbot_action_only_dsrl` baseline under `wan_va/action_only_dsrl/`, including a frozen LingBot wrapper, compact steering actor / critic, local embodied-SAC trainer, and a dedicated training config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
 - Refactored `wan_va/wan_va_server.py` so future-latent generation and action sampling are separate methods, and the action path now accepts external `initial_noise` while preserving the original random-noise behavior by default.
 - Added `script/run_lingbot_action_only_dsrl.py` to run the new baseline, including mock validation that logs `use_dsrl=false`, `use_dsrl=true`, injected steering noise shape, and SAC metrics before attempting RoboTwin startup.
+- Extended `script/run_lingbot_action_only_dsrl.py` with WandB support for action-only runs. The local default is now `entity=haoyuan-lingbot`, `project=lingbot`, and the script uploads the full config plus startup, training, episode, and final-report metrics.
 - Added `agent-read/v1/change_log_lingbot_action_only_dsrl.md`, `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`, `agent-read/v1/env_change_log.md`, and `agent-read/v1/V1.2.md` for handoff-quality documentation of the new baseline.
 - Expanded the approved `lingbot-va` environment with the missing RoboTwin-side packages needed to attempt local startup (`sapien`, `mplib`, `transforms3d`, `open3d`, `trimesh`, `zarr`, `openai`, `moviepy`, `azure`, `azure-ai-inference`, `pyglet<2`, `toppra`), and recorded each change plus the failed `pytorch3d` build attempt in `agent-read/v1/env_change_log.md`.
 - Confirmed March 16, 2026 mock validation for the new baseline:
@@ -60,6 +61,7 @@
   - `agent-read/v1/env_change_log_V1_en.md`
   - `agent-read/v1/env_change_log_V1_zh.md`
 - Recorded the direct V1 action-only training command in the new bilingual task spec and implementation report.
+- Expanded the bilingual V1 implementation reports to explain the current online RL budget (`max_episodes`, `max_action_chunks`, replay, warmup, updates per step), clarify that `curobo` / `pytorch3d` warnings are currently expected fallbacks on this machine, and document the default WandB settings for action-only runs.
 - Ran original LingBot eval regression after the action-only changes:
   - fresh `click_bell` smoke run
   - result `1/1`

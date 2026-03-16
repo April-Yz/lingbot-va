@@ -39,6 +39,9 @@ Provide a reproducible V1 action-only DSRL baseline for LingBot-VA on RoboTwin, 
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+WANDB_TEAM_NAME=haoyuan-lingbot \
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=action_only_click_bell_v1 \
 CUDA_VISIBLE_DEVICES=1 \
 python script/run_lingbot_action_only_dsrl.py \
   --config examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml
@@ -50,6 +53,86 @@ Default config values used by this command:
 - task config: `demo_clean_large_d435`
 - model path: `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
 - save root: `/home/zaijia001/vam/lingbot-va/train_out/action_only_dsrl_click_bell`
+- wandb entity: `haoyuan-lingbot`
+- wandb project: `lingbot`
+- wandb run name: `action_only_click_bell_v1`
+
+## Current RL Training Configuration
+
+This V1 does not define training length by a fixed number of optimizer steps. It is controlled by the online interaction budget: how many episodes to run and how many action chunks each episode is allowed to execute.
+
+Config file:
+
+- [robotwin_lingbot_action_only_dsrl.yaml](/home/zaijia001/vam/lingbot-va/examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml)
+
+Current default values:
+
+- `runner.seed = 10000`
+- `runner.max_episodes = 1`
+- `runner.max_action_chunks = 2`
+- `algorithm.replay_size = 4096`
+- `algorithm.batch_size = 1`
+- `algorithm.warmup_steps = 1`
+- `algorithm.updates_per_step = 1`
+- `algorithm.gamma = 0.99`
+- `algorithm.tau = 0.005`
+- `algorithm.actor_lr = 1e-4`
+- `algorithm.critic_lr = 1e-4`
+- `algorithm.alpha_lr = 1e-4`
+- `algorithm.initial_alpha = 0.01`
+- `algorithm.target_entropy = -240.0`
+
+These should be read as:
+
+- `max_episodes`
+  - maximum number of online RoboTwin episodes to run
+- `max_action_chunks`
+  - maximum number of LingBot action chunks executed within one episode
+- `warmup_steps`
+  - minimum replay size before SAC updates start
+- `updates_per_step`
+  - how many parameter updates to run after one environment interaction step
+- `batch_size`
+  - replay samples per update
+- `replay_size`
+  - replay buffer capacity
+
+So the current default is intentionally a small smoke-train:
+
+- at most `1` episode
+- at most `2` action chunks per episode
+- warmup after only `1` step
+- `1` update per step
+
+Its purpose is to validate:
+
+- the action-only pipeline can start
+- the actor / critic / alpha path can backpropagate
+- RoboTwin online interaction works end to end
+
+It is not yet meant to maximize task success rate.
+
+## WandB Logging
+
+The action-only training entry now supports WandB and defaults to:
+
+- entity: `haoyuan-lingbot`
+- project: `lingbot`
+
+The run logs:
+
+- the full YAML config
+- `startup/report`
+- `validation/mock_sac_metrics`
+- `train/critic_loss`
+- `train/actor_loss`
+- `train/alpha_loss`
+- `train/alpha`
+- `train/global_step`
+- `train/replay_size`
+- `episode/return`
+- `episode/successes`
+- `final/report`
 
 ## Validation Summary
 
@@ -59,6 +142,11 @@ Default config values used by this command:
 - `use_dsrl=true`: validated
 - online single-episode RoboTwin run: validated
 - latest online status: `finished_no_success`
+- The current logs may still show:
+  - missing `curobo.types`
+  - missing `pytorch3d`
+  - Vulkan ICD warnings
+  These are not the direct fatal errors for this pipeline on this machine. The current implementation falls back to `MPLib` and a CPU farthest-point sampler, so if the run continues to `Reset.`, `train/metrics`, and `final/report`, these warnings can be treated as known noise.
 
 ### Original LingBot Eval Regression
 
@@ -167,3 +255,24 @@ Observed result:
 
 - V1 proves the action-only training pipeline and regression compatibility
 - V1 does not yet prove good task success rate
+
+## Post-Train Eval Status Note
+
+The recent `place_can_basket` baseline post-train eval failure is not evidence that the post-train checkpoint itself is broken. The failure happens earlier, inside RoboTwin's task-side expert-check.
+
+The key reason is in [eval_polict_client_openpi.py](/home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py) inside `eval_policy(...)`:
+
+1. before the model is used for evaluation, the client first runs:
+   - `TASK_ENV.setup_demo(...)`
+   - `TASK_ENV.play_once()`
+2. this is RoboTwin's own scripted expert-check, not LingBot policy inference
+3. the reported stack shows:
+   - `IK Failed! Cannot find valid solution.`
+   - `target_pose cannot be None for move action.`
+4. that trace lands in [place_can_basket.py](/home/zaijia001/vam/RoboTwin-lingbot/envs/place_can_basket.py), where `self.grasp_actor(self.basket, ...)` fails to produce a valid IK pose during the basket-grasp fallback branch
+
+So the current conclusion is:
+
+- this `place_can_basket` failure happens before policy rollout really starts
+- it is a RoboTwin task or planning issue
+- it should not be treated as proof that the post-train checkpoint itself is invalid

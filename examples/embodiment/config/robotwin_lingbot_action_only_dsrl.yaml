@@ -14,6 +14,13 @@ runner:
   max_episodes: 1
   max_action_chunks: 2
 
+wandb:
+  enable: true
+  project: lingbot
+  entity: haoyuan-lingbot
+  run_name: action_only_click_bell_v1
+  mode: online
+
 policy:
   lingbot_config_name: robotwin
   lingbot_model_path: /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin

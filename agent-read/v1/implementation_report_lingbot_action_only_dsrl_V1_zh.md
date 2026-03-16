@@ -39,7 +39,10 @@
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
-CUDA_VISIBLE_DEVICES=1 \
+WANDB_TEAM_NAME=haoyuan-lingbot \
+WANDB_PROJECT=lingbot \
+WANDB_RUN_NAME=action_only_click_bell_v1 \
+CUDA_VISIBLE_DEVICES=0 \
 python script/run_lingbot_action_only_dsrl.py \
   --config examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml
 ```
@@ -50,6 +53,86 @@ python script/run_lingbot_action_only_dsrl.py \
 - task config: `demo_clean_large_d435`
 - model path: `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
 - save root: `/home/zaijia001/vam/lingbot-va/train_out/action_only_dsrl_click_bell`
+- wandb entity: `haoyuan-lingbot`
+- wandb project: `lingbot`
+- wandb run name: `action_only_click_bell_v1`
+
+## 当前 RL 训练配置说明
+
+当前这版 V1 不是按“训练多少个 gradient steps”来定义时长，而是按“最多跑多少个 online episode、每个 episode 最多采多少个 action chunk”来控制。
+
+配置文件：
+
+- [robotwin_lingbot_action_only_dsrl.yaml](/home/zaijia001/vam/lingbot-va/examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml)
+
+当前默认值：
+
+- `runner.seed = 10000`
+- `runner.max_episodes = 1`
+- `runner.max_action_chunks = 2`
+- `algorithm.replay_size = 4096`
+- `algorithm.batch_size = 1`
+- `algorithm.warmup_steps = 1`
+- `algorithm.updates_per_step = 1`
+- `algorithm.gamma = 0.99`
+- `algorithm.tau = 0.005`
+- `algorithm.actor_lr = 1e-4`
+- `algorithm.critic_lr = 1e-4`
+- `algorithm.alpha_lr = 1e-4`
+- `algorithm.initial_alpha = 0.01`
+- `algorithm.target_entropy = -240.0`
+
+这些参数的含义可以直接记成：
+
+- `max_episodes`
+  - 训练最多跑多少个 online episode
+- `max_action_chunks`
+  - 每个 episode 最多向 RoboTwin 发多少次 action chunk
+- `warmup_steps`
+  - replay buffer 至少积累多少步后才开始做 SAC 更新
+- `updates_per_step`
+  - 每次环境交互后做多少次参数更新
+- `batch_size`
+  - 每次从 replay buffer 采样多少条 transition
+- `replay_size`
+  - replay buffer 最大容量
+
+所以当前默认配置本质上是一个非常小的 smoke-train：
+
+- 最多 `1` 个 episode
+- 每个 episode 最多 `2` 个 action chunks
+- warmup 只要 `1` 步
+- 每步只更新 `1` 次
+
+它的目标主要是验证：
+
+- action-only pipeline 能启动
+- DSRL actor / critic / alpha 能反向传播
+- 在线 RoboTwin 交互能打通
+
+而不是追求任务成功率。
+
+## WandB 上报内容
+
+当前 action-only 训练脚本已经支持 WandB，并默认写到：
+
+- entity: `haoyuan-lingbot`
+- project: `lingbot`
+
+默认会上报：
+
+- 完整 YAML config
+- `startup/report`
+- `validation/mock_sac_metrics`
+- `train/critic_loss`
+- `train/actor_loss`
+- `train/alpha_loss`
+- `train/alpha`
+- `train/global_step`
+- `train/replay_size`
+- `episode/return`
+- `episode/successes`
+- `final/report`
 
 ## 验证总结
 
@@ -59,6 +142,11 @@ python script/run_lingbot_action_only_dsrl.py \
 - `use_dsrl=true`：已验证
 - RoboTwin 在线单 episode：已验证
 - 最近一次在线状态：`finished_no_success`
+- 当前日志里看到的：
+  - `curobo.types` 缺失
+  - `missing pytorch3d`
+  - `Vulkan ICD warning`
+  都不是这条链路的直接致命错误；当前实现会回退到 `MPLib` 和 CPU farthest-point sampler，所以只要后面继续推进到 `Reset.`、`train/metrics`、`final/report`，这类 warning 可以先视为已知噪声。
 
 ### 原始 LingBot Eval 回归验证
 
@@ -167,3 +255,24 @@ bash script/run_va_posttrain.sh \
 
 - V1 证明了 action-only 训练链路和回归兼容性
 - V1 还没有证明任务成功率已经足够好
+
+## Post-Train Eval 现状补充
+
+`place_can_basket` 这次 baseline post-train eval 的失败，不是 checkpoint 推理错误，而是 RoboTwin 任务本身在 expert-check 阶段先失败了。
+
+关键原因在 [eval_polict_client_openpi.py](/home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py) 的 `eval_policy(...)`：
+
+1. client 在真正调用模型之前，会先跑一次：
+   - `TASK_ENV.setup_demo(...)`
+   - `TASK_ENV.play_once()`
+2. 这一步是 RoboTwin 自己的 scripted expert-check，不依赖 LingBot 预测动作。
+3. 这次报错栈里：
+   - `left arm planning failed (IK Failed! Cannot find valid solution.)`
+   - `target_pose cannot be None for move action.`
+4. 对应的是 [place_can_basket.py](/home/zaijia001/vam/RoboTwin-lingbot/envs/place_can_basket.py) 里 `self.grasp_actor(self.basket, ...)` 在 fallback 抓篮子阶段没有拿到有效的 IK pose。
+
+所以当前结论是：
+
+- `place_can_basket` 这次失败发生在 policy 真正介入之前
+- 它是 RoboTwin 环境或任务 planning 的问题
+- 不能把它当成 post-train checkpoint 本身失效的证据

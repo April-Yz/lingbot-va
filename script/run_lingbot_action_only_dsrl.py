@@ -51,6 +51,43 @@ def log_dict(title, payload):
     LOGGER.info("%s: %s", title, json.dumps(payload, sort_keys=True, default=str))
 
 
+def init_wandb(config):
+    wandb_cfg = config.get("wandb", {})
+    if not bool(wandb_cfg.get("enable", False)):
+        return None
+
+    import wandb
+
+    wandb_base_url = os.getenv("WANDB_BASE_URL")
+    wandb_api_key = os.getenv("WANDB_API_KEY")
+    if wandb_api_key:
+        login_kwargs = {"key": wandb_api_key}
+        if wandb_base_url:
+            login_kwargs["host"] = wandb_base_url
+        wandb.login(**login_kwargs)
+
+    run = wandb.init(
+        entity=os.getenv(
+            "WANDB_TEAM_NAME",
+            wandb_cfg.get("entity", "haoyuan-lingbot"),
+        ),
+        project=os.getenv(
+            "WANDB_PROJECT",
+            wandb_cfg.get("project", "lingbot"),
+        ),
+        name=os.getenv("WANDB_RUN_NAME", wandb_cfg.get("run_name")),
+        config=config,
+        mode=wandb_cfg.get("mode", "online"),
+    )
+    return run
+
+
+def maybe_log_wandb(run, payload, step=None):
+    if run is None or payload is None:
+        return
+    run.log(payload, step=step)
+
+
 def validate_inference_paths(trainer, episode):
     trainer.policy.reset(episode["prompt"])
     baseline = trainer.policy.act(
@@ -113,12 +150,27 @@ def run_mock_validation(trainer):
 def train_single_task(config):
     save_root = Path(config["runner"]["save_root"]).expanduser().resolve()
     setup_logging(save_root)
+    wandb_run = init_wandb(config)
 
     log_dict("startup/config_path", {"save_root": str(save_root)})
+    maybe_log_wandb(
+        wandb_run,
+        {
+            "startup/save_root": str(save_root),
+        },
+    )
     trainer = ActionOnlyDsrlTrainer(config)
-    log_dict("startup/report", trainer.startup_report())
+    startup_report = trainer.startup_report()
+    log_dict("startup/report", startup_report)
+    maybe_log_wandb(wandb_run, {f"startup/{k}": v for k, v in startup_report.items()})
     mock_report = run_mock_validation(trainer)
     log_dict("startup/mock_validation", mock_report)
+    if mock_report.get("mock_metrics") is not None:
+        maybe_log_wandb(
+            wandb_run,
+            mock_report["mock_metrics"],
+            step=int(mock_report["mock_metrics"].get("train/global_step", 0)),
+        )
 
     metrics_history = []
     total_success = 0
@@ -190,6 +242,11 @@ def train_single_task(config):
                     metrics = trainer.update()
                     if metrics is not None:
                         log_dict("train/metrics", metrics)
+                        maybe_log_wandb(
+                            wandb_run,
+                            metrics,
+                            step=int(metrics.get("train/global_step", 0)),
+                        )
                         metrics_history.append(metrics)
                     total_success += int(rollout["success"])
                     break
@@ -213,6 +270,11 @@ def train_single_task(config):
                 metrics = trainer.update()
                 if metrics is not None:
                     log_dict("train/metrics", metrics)
+                    maybe_log_wandb(
+                        wandb_run,
+                        metrics,
+                        step=int(metrics.get("train/global_step", 0)),
+                    )
                     metrics_history.append(metrics)
                 current_step = next_step
                 first_chunk = False
@@ -227,6 +289,11 @@ def train_single_task(config):
                 metrics = trainer.update()
                 if metrics is not None:
                     log_dict("train/metrics", metrics)
+                    maybe_log_wandb(
+                        wandb_run,
+                        metrics,
+                        step=int(metrics.get("train/global_step", 0)),
+                    )
                     metrics_history.append(metrics)
 
             task_env.close_env(clear_cache=True)
@@ -239,15 +306,25 @@ def train_single_task(config):
                 "replay_size": len(trainer.replay_buffer),
             }
             log_dict("episode/summary", episode_summary)
+            maybe_log_wandb(
+                wandb_run,
+                {
+                    "episode/index": episode_idx,
+                    "episode/seed": episode_seed,
+                    "episode/return": episode_return,
+                    "episode/successes": total_success,
+                    "episode/replay_size": len(trainer.replay_buffer),
+                },
+                step=episode_idx + 1,
+            )
     except Exception as exc:
         blocked_error = str(exc)
-        log_dict(
-            "robowin/blocker",
-            {
-                "error": blocked_error,
-                "current_run_status": "blocked_on_robowin_env",
-            },
-        )
+        blocker_payload = {
+            "error": blocked_error,
+            "current_run_status": "blocked_on_robowin_env",
+        }
+        log_dict("robowin/blocker", blocker_payload)
+        maybe_log_wandb(wandb_run, {"robowin/blocked": 1, "robowin/error": blocked_error})
     finally:
         try:
             if task_env is not None:
@@ -273,6 +350,9 @@ def train_single_task(config):
         "blocked_error": blocked_error,
     }
     log_dict("final/report", final_report)
+    maybe_log_wandb(wandb_run, {f"final/{k}": v for k, v in final_report.items()})
+    if wandb_run is not None:
+        wandb_run.finish()
     return final_report
 
 
