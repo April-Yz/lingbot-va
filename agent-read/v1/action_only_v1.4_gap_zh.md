@@ -9,7 +9,7 @@
 - steering actor / critic / alpha 与 LingBot 参数已经分离
 - RoboTwin 在线单任务 pipeline 已经可以完整执行一个 episode
 
-但如果严格按照 [action_only_v1.4.md](/home/zaijia001/vam/lingbot-va/agent-read/action_only_v1.4.md) 这份新要求来衡量，**当前版本仍然不是“完全符合 V1.4 要求的最终版”**。
+但如果严格按照 [action_only_v1.4.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/action_only_v1.4.md) 这份新要求来衡量，**当前版本仍然不是“完全符合 V1.4 要求的最终版”**。
 
 主要差异不在“算法主线”，而在以下几类：
 
@@ -113,9 +113,9 @@ V1.4 要求所有文档使用带 `V1` 后缀、并区分 `en/zh` 的文件名，
 
 当前实际文档命名是：
 
-- [implementation_report_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/implementation_report_lingbot_action_only_dsrl.md)
-- [change_log_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/change_log_lingbot_action_only_dsrl.md)
-- [env_change_log.md](/home/zaijia001/vam/lingbot-va/agent-read/env_change_log.md)
+- [implementation_report_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/implementation_report_lingbot_action_only_dsrl.md)
+- [change_log_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/change_log_lingbot_action_only_dsrl.md)
+- [env_change_log.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/env_change_log.md)
 
 所以严格来说，V1.4 的“命名规范”没有满足。
 
@@ -144,9 +144,9 @@ V1.4 要求交付：
 
 当前仓库里虽然有：
 
-- [action_only_v1.4.md](/home/zaijia001/vam/lingbot-va/agent-read/action_only_v1.4.md)
-- [action_only_v1.md](/home/zaijia001/vam/lingbot-va/agent-read/action_only_v1.md)
-- [action_only_v1_ZH.md](/home/zaijia001/vam/lingbot-va/agent-read/action_only_v1_ZH.md)
+- [action_only_v1.4.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/action_only_v1.4.md)
+- [action_only_v1.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/action_only_v1.md)
+- [action_only_v1_ZH.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/action_only_v1_ZH.md)
 
 但它们更像“需求输入文档”，不是“最终同步后的 task spec 交付件”。
 
@@ -211,7 +211,7 @@ V1.4 对 implementation report 的最小复现章节要求非常细，除了：
 - common failure modes
 - debugging hints
 
-当前 [implementation_report_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/implementation_report_lingbot_action_only_dsrl.md) 虽然已经有 reproduction section，但离 V1.4 的“严格最小复现模板”还差一点，尤其是：
+当前 [implementation_report_lingbot_action_only_dsrl.md](/home/zaijia001/vam/lingbot-va/agent-read/v1/implementation_report_lingbot_action_only_dsrl.md) 虽然已经有 reproduction section，但离 V1.4 的“严格最小复现模板”还差一点，尤其是：
 
 - 成功判据没有系统展开
 - 常见失败模式和调试提示不够结构化

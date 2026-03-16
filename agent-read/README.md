@@ -32,18 +32,19 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - RoboTwin evaluation is wired to `/home/zaijia001/vam/RoboTwin-lingbot` by default and can be overridden with `ROBOTWIN_ROOT`.
 - `lerobot==0.3.3` remains installed for post-training support, but its published dependency constraints conflict with the upstream LingBot-VA PyTorch requirement. Follow the repository README and treat it as a `--no-deps` style add-on.
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.
-- The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/lingbot-v0.md`.
-- The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/eval-test-decoder-v1.md`.
-- The current raw-data-to-posttrain workflow and the concrete `place_can_basket` processing run are documented in `agent-read/posttrain-data-v1.md`.
+- Baseline eval and post-train notes now live under `agent-read/baseline/`.
+- The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/baseline/lingbot-v0.md`.
+- The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/baseline/eval-test-decoder-v1.md`.
+- The current raw-data-to-posttrain workflow, concrete `place_can_basket` processing run, and direct checkpoint-eval method are documented in `agent-read/baseline/posttrain-data-v1.md`.
 - The post-training converter now assumes recollected `Large_D435` RoboTwin data and validates raw camera frames at `480x640` before conversion.
-- Post-training WandB behavior now preserves existing auth, defaults the project name to `lingbot`, and supports custom run names via `WANDB_RUN_NAME`.
+- Post-training WandB behavior now preserves existing auth, defaults the project name to `lingbot`, defaults the team/entity to `haoyuan-lingbot`, and supports custom run names via `WANDB_RUN_NAME`.
 - The post-training launcher now auto-detects a Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3` instead of assuming `python` is on `PATH`.
 - The post-training dataset loader no longer fans out to a 128-process initialization pool for a single local LeRobot repo; `--dataset-init-worker` can override the worker count when needed.
 - The post-training trainer now normalizes floating-point batch tensors to `config.param_dtype` before the transformer forward pass, which avoids local `Float`/`BFloat16` dtype mismatches on Blackwell.
 - The local RobotWin post-training config now overrides the transformer attention backend to `torch`, avoiding the `flex_attention` block-mask failure observed with `lingbot-va-base` on this machine.
 - The clean base checkpoint `robbyant/lingbot-va-base` is now present locally under `checkpoints/lingbot-va-base` for post-training starts that should not inherit RoboTwin post-training weights.
 - A local March 16, 2026 post-training smoke test showed that single-GPU full fine-tuning OOMs at optimizer-state initialization, while a 2-GPU run completed `num_steps=1` and saved `checkpoint_step_1` successfully.
-- `agent-read/posttrain-data-v1.md` now records both the verified 2-GPU baseline command and the next `--batch-size 2` higher-utilization command to try.
+- `agent-read/baseline/posttrain-data-v1.md` now records the verified 2-GPU baseline command, the failed `--batch-size 2` attempt, the safer accumulation alternative, and the direct checkpoint-eval workflow.
 - The latest post-training notes now also record that `NGPU=2 + batch_size=2` failed locally, and recommend `batch_size=1 + gradient_accumulation_steps=2` as the safer way to increase effective batch.
 - A new local action-only DSRL baseline now exists under `wan_va/action_only_dsrl/`, with a dedicated training entry at `script/run_lingbot_action_only_dsrl.py` and config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
 - The action-only DSRL path now injects steering through LingBot's initial action diffusion noise via `VA_Server.sample_actions(..., initial_noise=...)`, while leaving the original random-noise path intact when DSRL is disabled.
@@ -53,18 +54,19 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - local embodied-SAC metrics are emitted by the new trainer in mock mode
 - Full RoboTwin online single-task training for the new DSRL entry is now runnable on this machine for RGB-based tasks. On March 16, 2026, a `click_bell` run completed one full online episode, logged SAC metrics at steps `2`, `3`, and `4`, and exited cleanly with `current_run_status: "finished_no_success"`.
 - `pytorch3d` still is not installed on this machine, but `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
-- The detailed implementation handoff for this feature is in `agent-read/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/env_change_log.md`.
-- A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/action_only_v1.4_gap_zh.md`.
+- V1 requirement, implementation, change-log, and environment docs now live under `agent-read/v1/`.
+- The detailed implementation handoff for this feature is in `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/v1/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/v1/env_change_log.md`.
+- A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/v1/action_only_v1.4_gap_zh.md`.
 - The V1 bilingual document set is now available under:
-  - `agent-read/task_spec_lingbot_action_only_dsrl_V1_en.md`
-  - `agent-read/task_spec_lingbot_action_only_dsrl_V1_zh.md`
-  - `agent-read/implementation_report_lingbot_action_only_dsrl_V1_en.md`
-  - `agent-read/implementation_report_lingbot_action_only_dsrl_V1_zh.md`
-  - `agent-read/change_log_lingbot_action_only_dsrl_V1_en.md`
-  - `agent-read/change_log_lingbot_action_only_dsrl_V1_zh.md`
-  - `agent-read/env_change_log_V1_en.md`
-  - `agent-read/env_change_log_V1_zh.md`
-- The direct V1 action-only training command is documented in both `task_spec_lingbot_action_only_dsrl_V1_en.md` and `task_spec_lingbot_action_only_dsrl_V1_zh.md`.
+  - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/implementation_report_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/implementation_report_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/change_log_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/change_log_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/env_change_log_V1_en.md`
+  - `agent-read/v1/env_change_log_V1_zh.md`
+- The direct V1 action-only training command is documented in both `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_en.md` and `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_zh.md`.
 - The current default action-only task config is `demo_clean_large_d435`, which matches the `Large_D435` camera layout (`640x480`) used by the recollected data pipeline.
 - March 16, 2026 regression validation after the action-only changes confirmed:
   - original LingBot RoboTwin eval still works with a fresh `click_bell` smoke run at `1/1`

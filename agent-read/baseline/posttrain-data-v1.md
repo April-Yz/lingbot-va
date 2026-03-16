@@ -168,6 +168,7 @@ This is the command shape that has already been validated locally. A 2-GPU smoke
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+WANDB_TEAM_NAME=haoyuan-lingbot \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket \
 CUDA_VISIBLE_DEVICES=2,3 \
@@ -192,6 +193,7 @@ This was attempted locally and did not remain stable in this workspace. The 2-GP
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+WANDB_TEAM_NAME=haoyuan-lingbot \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket_bs2 \
 CUDA_VISIBLE_DEVICES=2,3 \
@@ -220,6 +222,7 @@ If you want a larger effective batch without pushing per-GPU activation memory a
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+WANDB_TEAM_NAME=haoyuan-lingbot \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket_accum2 \
 CUDA_VISIBLE_DEVICES=2,3 \
@@ -251,6 +254,7 @@ Notes:
 - The default base config still inherits RobotWin normalization and camera layout.
 - `script/run_va_posttrain.sh` now preserves your existing WandB login state instead of overwriting `WANDB_*` with placeholders.
 - If `WANDB_PROJECT` is unset, the launcher defaults it to `lingbot`.
+- If `WANDB_TEAM_NAME` is unset, the launcher defaults it to `haoyuan-lingbot`.
 - You can control the WandB run name with `WANDB_RUN_NAME`.
 - The launcher auto-detects the interpreter in this order: `PYTHON_BIN`, `${CONDA_PREFIX}/bin/python`, `python`, then `python3`.
 - The training loader now initializes LeRobot repos with a bounded worker count; for a single local repo it stays single-process instead of spawning a 128-process pool.
@@ -282,6 +286,7 @@ If you do not activate `lingbot-va` first, you can also force the interpreter ex
 ```bash
 cd /home/zaijia001/vam/lingbot-va
 PYTHON_BIN=/home/zaijia001/ssd/miniconda3/envs/lingbot-va/bin/python \
+WANDB_TEAM_NAME=haoyuan-lingbot \
 WANDB_PROJECT=lingbot \
 WANDB_RUN_NAME=baseline_place_can_basket \
 CUDA_VISIBLE_DEVICES=2,3 \
@@ -296,7 +301,81 @@ NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
   --save-interval 5000
 ```
 
-## 8. What To Change For Another Task
+## 8. How To Eval A Post-Train Checkpoint
+
+Once a run has saved a checkpoint such as `checkpoint_step_5000`, RoboTwin eval does not need any extra conversion step. The LingBot server can now be pointed directly at that checkpoint root with `MODEL_PATH`.
+
+### 8.1 Start A Server From The Post-Train Checkpoint
+
+This example assumes the verified 2-GPU `batch_size=1` baseline has already produced:
+
+- `/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000`
+
+Start the LingBot server from that checkpoint:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
+CUDA_VISIBLE_DEVICES=1 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+Notes:
+
+- `MODEL_PATH` must point at the checkpoint root that contains `transformer/`, `vae/`, `tokenizer/`, and `text_encoder/`.
+- The local launcher still defaults to port `29056`; the client command below matches that.
+- If you want to evaluate a different checkpoint, only `MODEL_PATH` needs to change.
+
+### 8.2 Run A RoboTwin Eval Against That Checkpoint
+
+In another shell:
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step5000 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29056
+```
+
+What this does:
+
+- keeps the RoboTwin side in the `RoboTwin-lingbot` environment
+- evaluates the post-train checkpoint through the normal LingBot server/client split
+- writes metrics and rollout videos under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
+
+### 8.3 Scaling The Eval
+
+- For a smoke test, keep `--test_num 1`.
+- For a more meaningful single-task estimate, increase `--test_num` to `10` or `100`.
+- For a different task, change `--task_name` and keep `--task_config demo_clean_large_d435` if that task was also recollected with `Large_D435`.
+
+### 8.4 Expected Outputs
+
+After a successful run, the main artifacts are:
+
+- metrics JSON under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000/stseed-10000/metrics/<task_name>/res.json`
+- rollout videos under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000/stseed-10000/visualization/<task_name>/`
+- detailed `eval_result/` records under `/home/zaijia001/vam/RoboTwin-lingbot/eval_result/<task_name>/...`
+
+## 9. What To Change For Another Task
 
 For another RoboTwin single-task dataset, usually only these inputs change:
 
@@ -313,7 +392,7 @@ The action mapping stays valid as long as the raw HDF5 still provides:
 - `endpose/left_gripper`
 - `endpose/right_gripper`
 
-## 9. Known Limitation
+## 10. Known Limitation
 
 This pipeline uses the current local LingBot checkpoint path for VAE/text encoding:
 

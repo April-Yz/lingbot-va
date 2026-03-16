@@ -1,5 +1,6 @@
 START_PORT=${START_PORT:-29556}
 MASTER_PORT=${MASTER_PORT:-29661}
+MODEL_PATH=${MODEL_PATH:-}
 LOG_DIR='./logs'
 mkdir -p $LOG_DIR
 
@@ -7,6 +8,11 @@ save_root='./visualization/'
 mkdir -p $save_root
 
 batch_time=$(date +%Y%m%d_%H%M%S)
+
+model_args=()
+if [ -n "$MODEL_PATH" ]; then
+    model_args+=(--model-path "$MODEL_PATH")
+fi
 
 
 for i in {0..7}; do  
@@ -23,7 +29,8 @@ for i in {0..7}; do
         wan_va/wan_va_server.py \
         --config-name robotwin \
         --save_root $save_root \
-        --port $CURRENT_PORT  > $LOG_FILE 2>&1 &
+        --port $CURRENT_PORT \
+        "${model_args[@]}" > $LOG_FILE 2>&1 &
     sleep 2;
 done
 

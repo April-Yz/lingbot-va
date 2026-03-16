@@ -1,8 +1,14 @@
 START_PORT=${START_PORT:-29056}
 MASTER_PORT=${MASTER_PORT:-29061}
+MODEL_PATH=${MODEL_PATH:-}
 
 save_root='visualization/'
 mkdir -p $save_root
+
+model_args=()
+if [ -n "$MODEL_PATH" ]; then
+    model_args+=(--model-path "$MODEL_PATH")
+fi
 
 python -m torch.distributed.run \
     --nproc_per_node 1 \
@@ -10,6 +16,6 @@ python -m torch.distributed.run \
     wan_va/wan_va_server.py \
     --config-name robotwin \
     --port $START_PORT \
-    --save_root $save_root
-
+    --save_root $save_root \
+    "${model_args[@]}"
 

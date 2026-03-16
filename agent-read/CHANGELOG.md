@@ -10,32 +10,32 @@
 - Downloaded the `robbyant/lingbot-va-posttrain-robotwin` checkpoint into `checkpoints/` and wired `va_robotwin_cfg.py` to use it.
 - Documented the environment and attention-backend compatibility notes in `agent-read/`.
 - Updated the `lingbot-va` runtime to the `cu128` PyTorch wheel set so Blackwell GPUs on this machine can run inference.
-- Added `agent-read/lingbot-v0.md` to document the current RoboTwin model input/output contract, latent path, server-side preprocessing, returned action semantics, and the evaluation conclusions observed in this workspace.
+- Added `agent-read/baseline/lingbot-v0.md` to document the current RoboTwin model input/output contract, latent path, server-side preprocessing, returned action semantics, and the evaluation conclusions observed in this workspace.
 - Confirmed a complete `click_alarmclock` RoboTwin eval at `10/10` success; `press_stapler` had reached `9/9` success before the interrupted session ended.
 - Added a server-to-client eval manifest flow so each RoboTwin episode records its server latent directory and saves success-tagged `eval_result` videos instead of anonymous `episode*.mp4`.
 - Added `evaluation/robotwin/decode_saved_latents.py` to decode saved `latents_*.pt` files into per-episode videos after eval.
 - Completed a fresh `click_alarmclock` eval run at `10/10` success with decoded latent videos saved into RoboTwin `eval_result/`.
-- Added `agent-read/eval-test-decoder-v1.md` as the concrete report for the March 15, 2026 eval + latent decoder run.
-- Expanded `agent-read/eval-test-decoder-v1.md` with a step-by-step description of how eval-time `latents_*.pt` files are produced, mapped into a manifest, decoded by VAE, and exported into final visualization videos.
+- Added `agent-read/baseline/eval-test-decoder-v1.md` as the concrete report for the March 15, 2026 eval + latent decoder run.
+- Expanded `agent-read/baseline/eval-test-decoder-v1.md` with a step-by-step description of how eval-time `latents_*.pt` files are produced, mapped into a manifest, decoded by VAE, and exported into final visualization videos.
 - Added `script/prepare_robotwin_posttrain.py` to convert RoboTwin raw data into a LingBot-ready post-training bundle with LeRobot videos, `action_config`, latents, and `empty_emb.pt`.
 - Added CLI overrides to `wan_va/train.py` so local post-training can pass dataset/model paths without editing config files.
-- Added `agent-read/posttrain-data-v1.md` to document the concrete `place_can_basket` raw-data-to-posttrain workflow.
+- Added `agent-read/baseline/posttrain-data-v1.md` to document the concrete `place_can_basket` raw-data-to-posttrain workflow.
 - Tightened `script/prepare_robotwin_posttrain.py` to enforce the recollected `Large_D435` raw camera size (`480x640`) instead of adapting to smaller legacy frames.
-- Expanded `agent-read/posttrain-data-v1.md` with the recommended RoboTwin recollection command plus the processing and post-training commands for the `Large_D435` workflow.
-- Updated post-training WandB handling so the launcher no longer overwrites `WANDB_*`, defaults `WANDB_PROJECT` to `lingbot`, and supports `WANDB_RUN_NAME` for custom run names.
+- Expanded `agent-read/baseline/posttrain-data-v1.md` with the recommended RoboTwin recollection command plus the processing and post-training commands for the `Large_D435` workflow.
+- Updated post-training WandB handling so the launcher no longer overwrites `WANDB_*`, defaults `WANDB_PROJECT` to `lingbot`, defaults `WANDB_TEAM_NAME` to `haoyuan-lingbot`, and supports `WANDB_RUN_NAME` for custom run names.
 - Updated `script/run_va_posttrain.sh` to auto-detect the Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3`, and documented the explicit `PYTHON_BIN` fallback command.
 - Reduced local post-training dataset initialization fan-out by bounding LeRobot repo init workers and exposing `--dataset-init-worker` as a training override.
 - Cast floating-point training batches to `config.param_dtype` before the transformer forward pass so local post-training no longer fails on `Float` vs `BFloat16` input mismatches.
 - Overrode local RobotWin post-training to use `attn_mode='torch'` by default and added `--attn-mode` so training does not hit the `flex_attention` block-mask failure from the base checkpoint config.
 - Downloaded the clean base checkpoint `robbyant/lingbot-va-base` into `checkpoints/lingbot-va-base` for local post-training starts.
 - Verified local post-training on March 16, 2026: `NGPU=1` still OOMs at optimizer-state initialization, while a 2-GPU smoke run completed `num_steps=1` and saved `checkpoint_step_1`.
-- Rewrote the post-training command section in `agent-read/posttrain-data-v1.md` to keep the verified 2-GPU command and a separate `--batch-size 2` utilization-tuning command instead of accumulating stale one-off examples.
+- Rewrote the post-training command section in `agent-read/baseline/posttrain-data-v1.md` to keep the verified 2-GPU command and a separate `--batch-size 2` utilization-tuning command instead of accumulating stale one-off examples.
 - Updated the post-training notes to explicitly mark `NGPU=2 + batch_size=2` as locally failing, and added `batch_size=1 + gradient_accumulation_steps=2` as the safer way to raise effective global batch.
 - Added a local `lingbot_action_only_dsrl` baseline under `wan_va/action_only_dsrl/`, including a frozen LingBot wrapper, compact steering actor / critic, local embodied-SAC trainer, and a dedicated training config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
 - Refactored `wan_va/wan_va_server.py` so future-latent generation and action sampling are separate methods, and the action path now accepts external `initial_noise` while preserving the original random-noise behavior by default.
 - Added `script/run_lingbot_action_only_dsrl.py` to run the new baseline, including mock validation that logs `use_dsrl=false`, `use_dsrl=true`, injected steering noise shape, and SAC metrics before attempting RoboTwin startup.
-- Added `agent-read/change_log_lingbot_action_only_dsrl.md`, `agent-read/implementation_report_lingbot_action_only_dsrl.md`, `agent-read/env_change_log.md`, and `agent-read/V1.2.md` for handoff-quality documentation of the new baseline.
-- Expanded the approved `lingbot-va` environment with the missing RoboTwin-side packages needed to attempt local startup (`sapien`, `mplib`, `transforms3d`, `open3d`, `trimesh`, `zarr`, `openai`, `moviepy`, `azure`, `azure-ai-inference`, `pyglet<2`, `toppra`), and recorded each change plus the failed `pytorch3d` build attempt in `agent-read/env_change_log.md`.
+- Added `agent-read/v1/change_log_lingbot_action_only_dsrl.md`, `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`, `agent-read/v1/env_change_log.md`, and `agent-read/v1/V1.2.md` for handoff-quality documentation of the new baseline.
+- Expanded the approved `lingbot-va` environment with the missing RoboTwin-side packages needed to attempt local startup (`sapien`, `mplib`, `transforms3d`, `open3d`, `trimesh`, `zarr`, `openai`, `moviepy`, `azure`, `azure-ai-inference`, `pyglet<2`, `toppra`), and recorded each change plus the failed `pytorch3d` build attempt in `agent-read/v1/env_change_log.md`.
 - Confirmed March 16, 2026 mock validation for the new baseline:
   - `use_dsrl=false` stayed on the original action path
   - `use_dsrl=true` injected steering noise with shape `[1, 30, 2, 16, 1]`
@@ -49,16 +49,16 @@
   - RoboTwin stepped through the episode
   - replay insertion and SAC updates were logged at global steps `2`, `3`, and `4`
   - the run exited cleanly with `current_run_status: "finished_no_success"` and no residual process
-- Added `agent-read/action_only_v1.4_gap_zh.md` to compare the current action-only baseline against the stricter V1.4 task spec without changing runtime behavior, and to list the remaining doc, validation, and RLinf-integration gaps.
+- Added `agent-read/v1/action_only_v1.4_gap_zh.md` to compare the current action-only baseline against the stricter V1.4 task spec without changing runtime behavior, and to list the remaining doc, validation, and RLinf-integration gaps.
 - Added the V1 bilingual document set:
-  - `task_spec_lingbot_action_only_dsrl_V1_en.md`
-  - `task_spec_lingbot_action_only_dsrl_V1_zh.md`
-  - `implementation_report_lingbot_action_only_dsrl_V1_en.md`
-  - `implementation_report_lingbot_action_only_dsrl_V1_zh.md`
-  - `change_log_lingbot_action_only_dsrl_V1_en.md`
-  - `change_log_lingbot_action_only_dsrl_V1_zh.md`
-  - `env_change_log_V1_en.md`
-  - `env_change_log_V1_zh.md`
+  - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/implementation_report_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/implementation_report_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/change_log_lingbot_action_only_dsrl_V1_en.md`
+  - `agent-read/v1/change_log_lingbot_action_only_dsrl_V1_zh.md`
+  - `agent-read/v1/env_change_log_V1_en.md`
+  - `agent-read/v1/env_change_log_V1_zh.md`
 - Recorded the direct V1 action-only training command in the new bilingual task spec and implementation report.
 - Ran original LingBot eval regression after the action-only changes:
   - fresh `click_bell` smoke run
@@ -69,3 +69,5 @@
   - `--num-steps 1 --save-interval 1`
   - checkpoint saved at `/home/zaijia001/vam/lingbot-va/train_out/posttrain_regression_smoke/checkpoints/checkpoint_step_1/transformer`
 - Added `/home/zaijia001/vam/RoboTwin-lingbot/task_config/demo_clean_large_d435.yml` and switched the action-only default config to `demo_clean_large_d435` so the online training path matches the `Large_D435` camera size (`640x480`).
+- Reorganized `agent-read/` so baseline eval/post-train docs live under `agent-read/baseline/` and V1/action-only docs live under `agent-read/v1/`.
+- Added a direct post-train checkpoint evaluation method to `agent-read/baseline/posttrain-data-v1.md`, and updated the LingBot RoboTwin server launcher to accept `MODEL_PATH` / `--model-path` for checkpoint selection during eval.

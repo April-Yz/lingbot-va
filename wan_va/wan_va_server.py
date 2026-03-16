@@ -735,6 +735,8 @@ def run(args):
     port = config.port if args.port is None else args.port
     if args.save_root is not None:
         config.save_root = args.save_root
+    if args.model_path is not None:
+        config.wan22_pretrained_model_name_or_path = args.model_path
     rank = int(os.getenv("RANK", 0))
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
     world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -775,6 +777,12 @@ def main():
         type=str,
         default=None,
         help='save root'
+    )
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        default=None,
+        help="override the pretrained/model checkpoint root used by the server",
     )
     args = parser.parse_args()
     run(args)

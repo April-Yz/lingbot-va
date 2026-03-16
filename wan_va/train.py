@@ -63,7 +63,7 @@ class Trainer:
         if config.enable_wandb and config.rank == 0:
             wandb_base_url = os.getenv("WANDB_BASE_URL")
             wandb_api_key = os.getenv("WANDB_API_KEY")
-            wandb_team_name = os.getenv("WANDB_TEAM_NAME")
+            wandb_team_name = os.getenv("WANDB_TEAM_NAME", "haoyuan-lingbot")
             wandb_project = os.getenv("WANDB_PROJECT", "lingbot")
             wandb_run_name = os.getenv("WANDB_RUN_NAME")
 

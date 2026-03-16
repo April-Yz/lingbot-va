@@ -39,6 +39,7 @@ config_name=${CONFIG_NAME}
 ## cmd setting
 export TOKENIZERS_PARALLELISM=false
 : "${WANDB_PROJECT:=lingbot}"
+: "${WANDB_TEAM_NAME:=haoyuan-lingbot}"
 PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
 "${python_bin}" -m torch.distributed.run \
     --nproc_per_node=${num_gpu} \

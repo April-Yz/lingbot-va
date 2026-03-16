@@ -2,7 +2,7 @@
 
 ## Scope
 
-This change set implements the minimum viable `lingbot_action_only_dsrl` baseline requested in `agent-read/action_only_v1.md`, while keeping all code changes inside `/home/zaijia001/vam/lingbot-va`.
+This change set implements the minimum viable `lingbot_action_only_dsrl` baseline requested in `agent-read/v1/action_only_v1.md`, while keeping all code changes inside `/home/zaijia001/vam/lingbot-va`.
 
 ## Changed Files
 
@@ -91,10 +91,10 @@ This change set implements the minimum viable `lingbot_action_only_dsrl` baselin
     - `dsrl_hidden_dims`
     - `algorithm: embodied_sac`
 
-- `agent-read/env_change_log.md`
+- `agent-read/v1/env_change_log.md`
   - Why: required by the implementation brief for all environment changes.
 
-- `agent-read/implementation_report_lingbot_action_only_dsrl.md`
+- `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`
   - Why: required handoff-quality implementation report.
 
 - `agent-read/V1.2.md`
