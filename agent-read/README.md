@@ -46,6 +46,9 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - explicit parallel-server port override examples using `START_PORT` and `MASTER_PORT`
   - a CUDA device-remapping note explaining why `CUDA_VISIBLE_DEVICES=2` still appears as local `GPU 0` in PyTorch OOM logs
   - a note explaining the non-fatal `OIDN Error: invalid handle` renderer logs plus the recommended `SAPIEN_RT_DENOISER=none` and `LINGBOT_SKIP_RENDER_TEST=1` client launch pattern
+- RoboTwin eval now accepts an optional `model_tag` field in the client overrides; when present, the tag is added to the `eval_result/...` directory path, manifest, console summary, and `_result.txt`.
+- The baseline docs and command index now explicitly record that multi-episode eval is controlled by the client-side `--test_num`, not by the server command.
+- The baseline docs and command index now also include the post-eval latent decoder command for rerunning `decode_saved_latents.py` from a saved `latent_decode_manifest.json`.
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`

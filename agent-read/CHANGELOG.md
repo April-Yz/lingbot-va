@@ -93,3 +93,8 @@
 - Updated the eval client render self-check so `evaluation/robotwin/test_render.py` no longer forces `oidn`; it now respects `SAPIEN_RT_DENOISER`.
 - Added support for `LINGBOT_SKIP_RENDER_TEST=1` so the RoboTwin eval client can skip the startup render self-check entirely when desired.
 - Added bilingual command-index notes explaining that repeated `OIDN Error: invalid handle` logs come from the renderer side and are usually non-fatal for action eval.
+- Extended the RoboTwin eval client with an optional `model_tag` override so result directories and summaries can distinguish runs like `baseline` vs `ckpt5000`.
+- Updated the bilingual command index plus the baseline post-train docs to:
+  - show `model_tag` examples for official and local checkpoints
+  - clarify that multi-episode eval uses the client-side `--test_num`
+  - document the post-eval latent decoder command using `decode_saved_latents.py`

@@ -356,6 +356,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000 \
@@ -371,6 +372,9 @@ What this does:
 - evaluates the post-train checkpoint through the normal LingBot server/client split
 - writes metrics and rollout videos under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
 - the client entry now prepends both the `lingbot-va` repo root and `ROBOTWIN_ROOT` to `sys.path`, so this absolute-path command is valid even when your current shell directory is `RoboTwin-lingbot`
+- `--model_tag ckpt5000` adds a readable model label into the `eval_result/...` directory path and summary files
+
+If you want to evaluate more than one episode, change the client-side `--test_num`. The server command does not need a matching test count.
 
 ### 8.3 Debug Smoke Command That Already Produced A First Result
 
@@ -390,6 +394,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000_fix4 \
@@ -414,6 +419,26 @@ The main artifacts from that run are:
 - eval summary: `/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/_result.txt`
 - rollout video: `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/visualization/place_can_basket/`
 - manifest: `/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/latent_decode_manifest.json`
+
+### 8.6 Decode Latents After Eval
+
+After an eval run, you can decode that run's saved latent rollout with:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+python evaluation/robotwin/decode_saved_latents.py \
+  --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
+  --config-name robotwin \
+  --fps 10
+```
+
+Notes:
+
+- replace `<timestamp>` with the actual eval timestamp directory
+- the manifest path is also recorded in that run's `_result.txt`
+- decoded videos are written beside the run outputs, and the decoder also emits `latent_decode_results.json`
 
 ### 8.4 Scaling The Eval
 

@@ -78,6 +78,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag baseline \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_official_posttrain_place_can_basket \
@@ -110,6 +111,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag baseline \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_official_posttrain_click_bell \
@@ -226,14 +228,17 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000 \
   --video_guidance_scale 5 \
   --action_guidance_scale 1 \
-  --test_num 1 \
+  --test_num 10 \
   --port 29056
 ```
+
+`--test_num` belongs to the client command, not the server command. If you want to evaluate more episodes, change the client's `--test_num`.
 
 Debug smoke version:
 
@@ -252,6 +257,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000_fix4 \
@@ -267,6 +273,26 @@ Reference:
 
 - `agent-read/baseline/posttrain-data-v1.md`
 - `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1.md`
+
+### 4.1 Decode Saved Latents After Eval
+
+After an eval run finishes, you can decode the saved latent rollout by pointing the decoder at that run's manifest:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+python evaluation/robotwin/decode_saved_latents.py \
+  --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
+  --config-name robotwin \
+  --fps 10
+```
+
+Notes:
+
+- Replace `<timestamp>` with the actual eval timestamp directory.
+- The manifest path is also recorded inside that run's `_result.txt`.
+- Decoded videos will be written next to the original eval outputs, and the decoder will also create `latent_decode_results.json`.
 
 ## 5. Parallel Eval On Multiple Servers
 

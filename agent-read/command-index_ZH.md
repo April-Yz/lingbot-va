@@ -78,6 +78,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag baseline \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_official_posttrain_place_can_basket \
@@ -110,6 +111,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag baseline \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_official_posttrain_click_bell \
@@ -236,14 +238,17 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000 \
   --video_guidance_scale 5 \
   --action_guidance_scale 1 \
-  --test_num 1 \
+  --test_num 10 \
   --port 29056
 ```
+
+如果你想多测几次，改的是 client 端的 `--test_num`，不是 server 端。
 
 Debug smoke 版本：
 
@@ -262,6 +267,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000_fix4 \
@@ -277,6 +283,26 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 
 - `agent-read/baseline/posttrain-data-v1_ZH.md`
 - `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1_ZH.md`
+
+### 4.1 eval 结束后如何再解码 latent
+
+eval 跑完以后，可以拿这次运行生成的 manifest 再做一次 latent 可视化解码：
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+python evaluation/robotwin/decode_saved_latents.py \
+  --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
+  --config-name robotwin \
+  --fps 10
+```
+
+说明：
+
+- 把 `<timestamp>` 换成这次 eval 真正生成的时间目录
+- manifest 路径也会写进对应 run 的 `_result.txt`
+- 解码后的视频会和原始 eval 结果放在同一组输出目录里，同时还会生成 `latent_decode_results.json`
 
 ## 5. 并行评测时如何改端口
 

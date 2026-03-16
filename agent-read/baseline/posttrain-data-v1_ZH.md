@@ -310,6 +310,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000 \
@@ -325,6 +326,9 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - 通过 websocket 调用 LingBot server
 - 输出 metrics 和 rollout 视频到 `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
 - client 入口现在会同时把 `lingbot-va` 仓库根目录和 `ROBOTWIN_ROOT` 加进 `sys.path`，所以即使你当前 shell 在 `RoboTwin-lingbot` 目录下，这条绝对路径命令也可以直接运行
+- `--model_tag ckpt5000` 会把更可读的模型标签写进 `eval_result/...` 的目录路径和摘要文件里
+
+如果你想多测几条，改的是 client 端的 `--test_num`，不是 server 端。
 
 ### 10.3 已经实际跑出首个结果的 debug smoke 命令
 
@@ -344,6 +348,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --train_config_name 0 \
   --model_name 0 \
   --ckpt_setting 0 \
+  --model_tag ckpt5000 \
   --seed 0 \
   --policy_name ACT \
   --save_root ./results_posttrain_eval_step5000_fix4 \
@@ -375,6 +380,26 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - eval 摘要：`/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/_result.txt`
 - rollout 视频：`/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/visualization/place_can_basket/`
 - manifest：`/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/latent_decode_manifest.json`
+
+### 10.5 eval 结束后如何再解码 latent
+
+eval 跑完以后，可以用这条命令把这次运行保存下来的 latent 再解码成视频：
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+python evaluation/robotwin/decode_saved_latents.py \
+  --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
+  --config-name robotwin \
+  --fps 10
+```
+
+说明：
+
+- 把 `<timestamp>` 换成这次 eval 真正生成的时间目录
+- manifest 路径也会写进对应 run 的 `_result.txt`
+- 解码后的视频会和原始输出放在一起，同时还会生成 `latent_decode_results.json`
 
 ### 10.4 如何扩大量评测
 

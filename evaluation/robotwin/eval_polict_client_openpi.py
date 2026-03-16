@@ -63,6 +63,11 @@ def write_json(data: dict, fpath: Path) -> None:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
+def sanitize_path_component(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", value.strip())
+    return cleaned.strip("._-") or "unnamed"
+
+
 def build_episode_artifact_name(prefix: str, episode_idx: int, success: bool, seed: int, ext: str = ".mp4") -> str:
     outcome = "success" if success else "fail"
     return f"{prefix}episode{episode_idx:03d}-seed{seed}-{outcome}{ext}"
@@ -327,6 +332,7 @@ def main(usr_args):
     policy_name = usr_args["policy_name"]
     video_guidance_scale = usr_args["video_guidance_scale"]
     action_guidance_scale = usr_args["action_guidance_scale"]
+    model_tag = usr_args.get("model_tag")
     instruction_type = 'seen'
     save_dir = None
     video_save_dir = None
@@ -341,6 +347,7 @@ def main(usr_args):
     args["save_root"] = save_root
     args["expert_check"] = usr_args.get("expert_check", True)
     args["step_limit_override"] = usr_args.get("step_limit_override")
+    args["model_tag"] = model_tag
 
     embodiment_type = args.get("embodiment")
     embodiment_config_path = os.path.join(CONFIGS_PATH, "_embodiment_config.yml")
@@ -381,7 +388,11 @@ def main(usr_args):
     else:
         embodiment_name = str(embodiment_type[0]) + "+" + str(embodiment_type[1])
 
-    save_dir = Path(f"eval_result/{task_name}/{policy_name}/{task_config}/{ckpt_setting}/{current_time}")
+    save_dir_parts = ["eval_result", task_name, policy_name, task_config, str(ckpt_setting)]
+    if model_tag:
+        save_dir_parts.append(sanitize_path_component(str(model_tag)))
+    save_dir_parts.append(current_time)
+    save_dir = Path(*save_dir_parts)
     save_dir.mkdir(parents=True, exist_ok=True)
 
     if args["eval_video_log"]:
@@ -403,6 +414,8 @@ def main(usr_args):
     print("\033[95mRandom Table Height:\033[0m " + str(args["domain_randomization"]["random_table_height"]))
     print("\033[95mRandom Head Camera Distance:\033[0m " + str(args["domain_randomization"]["random_head_camera_dis"]))
     print("\033[95mExpert Check:\033[0m " + str(args.get("expert_check", True)))
+    if model_tag:
+        print("\033[95mModel Tag:\033[0m " + str(model_tag))
 
     print("\033[94mHead Camera Config:\033[0m " + str(args["camera"]["head_camera_type"]) + f", " +
           str(args["camera"]["collect_head_camera"]))
@@ -441,6 +454,8 @@ def main(usr_args):
     file_path = os.path.join(save_dir, f"_result.txt")
     with open(file_path, "w") as file:
         file.write(f"Timestamp: {current_time}\n\n")
+        if model_tag:
+            file.write(f"Model Tag: {model_tag}\n\n")
         file.write(f"Instruction Type: {instruction_type}\n\n")
         file.write(f"Success Rate: {float(np.array(suc_nums)[0] / test_num):.4f}\n\n")
         file.write(f"Episode Manifest: {args['episode_manifest_path']}\n")
@@ -712,6 +727,7 @@ def eval_policy(task_name,
                 "policy_name": args["policy_name"],
                 "task_config": args["task_config"],
                 "ckpt_setting": args["ckpt_setting"],
+                "model_tag": args.get("model_tag"),
                 "st_seed": int(st_seed),
                 "episodes": episode_records,
             },
@@ -719,7 +735,9 @@ def eval_policy(task_name,
         )
         
         print(
-            f"\033[93m{task_name}\033[0m | \033[94m{args['policy_name']}\033[0m | \033[92m{args['task_config']}\033[0m | \033[91m{args['ckpt_setting']}\033[0m\n"
+            f"\033[93m{task_name}\033[0m | \033[94m{args['policy_name']}\033[0m | \033[92m{args['task_config']}\033[0m | \033[91m{args['ckpt_setting']}\033[0m"
+            + (f" | \033[96m{args['model_tag']}\033[0m" if args.get("model_tag") else "")
+            + "\n"
             f"Success rate: \033[96m{TASK_ENV.suc}/{TASK_ENV.test_num}\033[0m => \033[95m{round(TASK_ENV.suc/TASK_ENV.test_num*100, 1)}%\033[0m, current seed: \033[90m{now_seed}\033[0m\n"
         )
         now_seed += 1
