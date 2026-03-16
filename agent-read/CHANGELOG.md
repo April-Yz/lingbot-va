@@ -71,3 +71,8 @@
 - Added `/home/zaijia001/vam/RoboTwin-lingbot/task_config/demo_clean_large_d435.yml` and switched the action-only default config to `demo_clean_large_d435` so the online training path matches the `Large_D435` camera size (`640x480`).
 - Reorganized `agent-read/` so baseline eval/post-train docs live under `agent-read/baseline/` and V1/action-only docs live under `agent-read/v1/`.
 - Added a direct post-train checkpoint evaluation method to `agent-read/baseline/posttrain-data-v1.md`, and updated the LingBot RoboTwin server launcher to accept `MODEL_PATH` / `--model-path` for checkpoint selection during eval.
+- Added Chinese baseline mirrors:
+  - `agent-read/baseline/lingbot-v0_ZH.md`
+  - `agent-read/baseline/eval-test-decoder-v1_ZH.md`
+  - `agent-read/baseline/posttrain-data-v1_ZH.md`
+- Corrected the post-train checkpoint-eval flow so `MODEL_PATH` can point at a training checkpoint root that only contains `transformer/`; the server now keeps loading `vae/`, `tokenizer/`, and `text_encoder/` from the configured base model root.

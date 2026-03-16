@@ -78,9 +78,13 @@ class VA_Server:
             torch_device='cpu' if self.enable_offload else self.device,
         )
 
+        transformer_path = getattr(
+            job_config,
+            "transformer_override_path",
+            os.path.join(job_config.wan22_pretrained_model_name_or_path, "transformer"),
+        )
         self.transformer = load_transformer(
-            os.path.join(job_config.wan22_pretrained_model_name_or_path,
-                         'transformer'),
+            transformer_path,
             torch_dtype=self.dtype,
             torch_device=self.device,
         )
@@ -736,7 +740,19 @@ def run(args):
     if args.save_root is not None:
         config.save_root = args.save_root
     if args.model_path is not None:
-        config.wan22_pretrained_model_name_or_path = args.model_path
+        transformer_dir = os.path.join(args.model_path, "transformer")
+        has_full_model = all(
+            os.path.isdir(os.path.join(args.model_path, subdir))
+            for subdir in ("vae", "tokenizer", "text_encoder", "transformer")
+        )
+        if has_full_model:
+            config.wan22_pretrained_model_name_or_path = args.model_path
+        elif os.path.isdir(transformer_dir):
+            config.transformer_override_path = transformer_dir
+        elif os.path.basename(args.model_path) == "transformer" and os.path.isdir(args.model_path):
+            config.transformer_override_path = args.model_path
+        else:
+            config.wan22_pretrained_model_name_or_path = args.model_path
     rank = int(os.getenv("RANK", 0))
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
     world_size = int(os.environ.get("WORLD_SIZE", 1))

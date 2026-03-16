@@ -305,6 +305,14 @@ NGPU=2 CONFIG_NAME=robotwin_train bash script/run_va_posttrain.sh \
 
 Once a run has saved a checkpoint such as `checkpoint_step_5000`, RoboTwin eval does not need any extra conversion step. The LingBot server can now be pointed directly at that checkpoint root with `MODEL_PATH`.
 
+Important correction:
+
+- a training checkpoint like `checkpoint_step_5000` usually contains only `transformer/`
+- it is not a full model bundle with `vae/`, `tokenizer/`, and `text_encoder/`
+- the local server now supports this case by loading:
+  - `transformer/` from `MODEL_PATH`
+  - `vae/`, `tokenizer/`, and `text_encoder/` from the base model root in `va_robotwin_cfg.py`
+
 ### 8.1 Start A Server From The Post-Train Checkpoint
 
 This example assumes the verified 2-GPU `batch_size=1` baseline has already produced:
@@ -324,7 +332,9 @@ bash evaluation/robotwin/launch_server.sh
 
 Notes:
 
-- `MODEL_PATH` must point at the checkpoint root that contains `transformer/`, `vae/`, `tokenizer/`, and `text_encoder/`.
+- `MODEL_PATH` may point either to:
+  - a full model root that contains `transformer/`, `vae/`, `tokenizer/`, and `text_encoder/`
+  - or a post-train checkpoint root that contains only `transformer/`
 - The local launcher still defaults to port `29056`; the client command below matches that.
 - If you want to evaluate a different checkpoint, only `MODEL_PATH` needs to change.
 
