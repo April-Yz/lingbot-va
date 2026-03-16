@@ -49,3 +49,4 @@
   - RoboTwin stepped through the episode
   - replay insertion and SAC updates were logged at global steps `2`, `3`, and `4`
   - the run exited cleanly with `current_run_status: "finished_no_success"` and no residual process
+- Added `agent-read/action_only_v1.4_gap_zh.md` to compare the current action-only baseline against the stricter V1.4 task spec without changing runtime behavior, and to list the remaining doc, validation, and RLinf-integration gaps.

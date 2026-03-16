@@ -54,6 +54,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - Full RoboTwin online single-task training for the new DSRL entry is now runnable on this machine for RGB-based tasks. On March 16, 2026, a `click_bell` run completed one full online episode, logged SAC metrics at steps `2`, `3`, and `4`, and exited cleanly with `current_run_status: "finished_no_success"`.
 - `pytorch3d` still is not installed on this machine, but `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
 - The detailed implementation handoff for this feature is in `agent-read/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/env_change_log.md`.
+- A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/action_only_v1.4_gap_zh.md`.
 
 ## Current Evaluation Conclusions
 
