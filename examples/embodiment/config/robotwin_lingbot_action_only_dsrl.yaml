@@ -5,7 +5,7 @@
 env:
   robowin_root: /home/zaijia001/vam/RoboTwin-lingbot
   task_name: click_bell
-  task_config: demo_clean
+  task_config: demo_clean_large_d435
   instruction_type: seen
 
 runner:

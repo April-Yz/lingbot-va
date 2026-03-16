@@ -68,3 +68,4 @@
   - `MASTER_PORT=29621`, `CUDA_VISIBLE_DEVICES=0,1`, `NGPU=2`
   - `--num-steps 1 --save-interval 1`
   - checkpoint saved at `/home/zaijia001/vam/lingbot-va/train_out/posttrain_regression_smoke/checkpoints/checkpoint_step_1/transformer`
+- Added `/home/zaijia001/vam/RoboTwin-lingbot/task_config/demo_clean_large_d435.yml` and switched the action-only default config to `demo_clean_large_d435` so the online training path matches the `Large_D435` camera size (`640x480`).

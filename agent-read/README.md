@@ -65,6 +65,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - `agent-read/env_change_log_V1_en.md`
   - `agent-read/env_change_log_V1_zh.md`
 - The direct V1 action-only training command is documented in both `task_spec_lingbot_action_only_dsrl_V1_en.md` and `task_spec_lingbot_action_only_dsrl_V1_zh.md`.
+- The current default action-only task config is `demo_clean_large_d435`, which matches the `Large_D435` camera layout (`640x480`) used by the recollected data pipeline.
 - March 16, 2026 regression validation after the action-only changes confirmed:
   - original LingBot RoboTwin eval still works with a fresh `click_bell` smoke run at `1/1`
   - original LingBot post-train still works with a fresh `num_steps=1` 2-GPU smoke run that saved `checkpoint_step_1`

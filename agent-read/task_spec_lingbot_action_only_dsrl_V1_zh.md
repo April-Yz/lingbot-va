@@ -66,7 +66,7 @@ python script/run_lingbot_action_only_dsrl.py \
 这条命令使用当前仓库默认配置：
 
 - task: `click_bell`
-- task config: `demo_clean`
+- task config: `demo_clean_large_d435`
 - save root: `/home/zaijia001/vam/lingbot-va/train_out/action_only_dsrl_click_bell`
 - model path: `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
 

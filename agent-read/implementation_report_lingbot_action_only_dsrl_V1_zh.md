@@ -47,7 +47,7 @@ python script/run_lingbot_action_only_dsrl.py \
 这条命令对应的默认配置是：
 
 - task: `click_bell`
-- task config: `demo_clean`
+- task config: `demo_clean_large_d435`
 - model path: `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
 - save root: `/home/zaijia001/vam/lingbot-va/train_out/action_only_dsrl_click_bell`
 
@@ -101,6 +101,11 @@ python -m evaluation.robotwin.eval_polict_client_openpi \
 - task: `click_bell`
 - 指标文件：`/home/zaijia001/vam/RoboTwin-lingbot/results_regression_eval/stseed-10000/metrics/click_bell/res.json`
 - 结果：`1 / 1`，`succ_rate = 1.0`
+
+说明：
+
+- 这次回归验证使用的是原始 `demo_clean` eval 路径，用来确认向后兼容性
+- 当前 action-only 默认配置已经切到 `demo_clean_large_d435`，这样和你重新采集的 `Large_D435` 数据保持一致
 
 ### 原始 LingBot Post-Train 回归验证
 
