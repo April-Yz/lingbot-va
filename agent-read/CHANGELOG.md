@@ -100,3 +100,5 @@
   - document the post-eval latent decoder command using `decode_saved_latents.py`
 - Added project-local `AGENTS.md` files for `lingbot-va` and `RoboTwin-lingbot` so scope boundaries, debug-log expectations, and command-sync rules are written down in-repo.
 - Updated the bilingual decoder command docs to include explicit `CUDA_VISIBLE_DEVICES=...` examples and a note that the `clip_output` line is a benign warning.
+- Added `agent-read/baseline/v1.5_dataprocess.md`, a focused audit of RoboTwin raw data collection versus LingBot post-train preprocessing.
+- Recorded a high-confidence consistency issue in that audit: RoboTwin raw `endpose` appears to be stored as `wxyz`, while LingBot conversion, dataset-relative-pose logic, and eval pose composition currently treat the quaternion block as `xyzw`.
