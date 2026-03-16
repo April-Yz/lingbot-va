@@ -283,6 +283,12 @@ cd /home/zaijia001/vam/lingbot-va
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
 CUDA_VISIBLE_DEVICES=1 \
 bash evaluation/robotwin/launch_server.sh
+
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_10000 \
+CUDA_VISIBLE_DEVICES=2 \
+bash evaluation/robotwin/launch_server.sh
 ```
 
 这里要注意：
@@ -318,6 +324,26 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
   --action_guidance_scale 1 \
   --test_num 1 \
   --port 29056
+
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt10000 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step10000 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29056
 ```
 
 这条命令做的事情是：
@@ -329,6 +355,52 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - `--model_tag ckpt5000` 会把更可读的模型标签写进 `eval_result/...` 的目录路径和摘要文件里
 
 如果你想多测几条，改的是 client 端的 `--test_num`，不是 server 端。
+
+### 10.2.1 临时四元数顺序 smoke test
+
+现在 RoboTwin eval client 还支持一个只用于排查的临时开关：
+
+- `--quat_order_mode legacy_xyzw`
+- `--quat_order_mode robowin_wxyz`
+
+其中：
+
+- `legacy_xyzw` 保持旧逻辑
+- `robowin_wxyz` 会把 RoboTwin 姿态里的四元数按 `wxyz` 处理，再临时转成 `scipy` 需要的 `xyzw`
+
+用它测 `checkpoint_step_10000` 的最小命令如下：
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+CUDA_VISIBLE_DEVICES=3 \
+PYTHONWARNINGS=ignore::UserWarning \
+LINGBOT_SKIP_RENDER_TEST=1 \
+SAPIEN_RT_DENOISER=none \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt10000-wxyzquat \
+  --quat_order_mode robowin_wxyz \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step10000_wxyzquat \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29060
+```
+
+注意：这只是 eval 侧的临时探针，不会修复训练 bundle 本身。
 
 ### 10.3 已经实际跑出首个结果的 debug smoke 命令
 

@@ -240,6 +240,52 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 
 `--test_num` belongs to the client command, not the server command. If you want to evaluate more episodes, change the client's `--test_num`.
 
+Temporary quaternion-order probe for `checkpoint_step_10000`:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_10000 \
+START_PORT=29060 \
+MASTER_PORT=29070 \
+CUDA_VISIBLE_DEVICES=2 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+CUDA_VISIBLE_DEVICES=3 \
+PYTHONWARNINGS=ignore::UserWarning \
+LINGBOT_SKIP_RENDER_TEST=1 \
+SAPIEN_RT_DENOISER=none \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt10000-wxyzquat \
+  --quat_order_mode robowin_wxyz \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step10000_wxyzquat \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29060
+```
+
+This probe only changes eval-side quaternion composition. It does not fix the training data that produced the checkpoint.
+
 Debug smoke version:
 
 ```bash
@@ -296,6 +342,19 @@ Notes:
 - Decoded videos will be written next to the original eval outputs, and the decoder will also create `latent_decode_results.json`.
 - Replace `CUDA_VISIBLE_DEVICES=2` with whichever GPU you want the decoder to use.
 - The line `The config attributes {'clip_output': False} ... will be ignored` is a non-fatal diffusers warning; decoding can continue normally when that is the only warning.
+
+Concrete example:
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+CUDA_VISIBLE_DEVICES=2 \
+python evaluation/robotwin/decode_saved_latents.py \
+  --manifest "/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/2026-03-16 17:52:18/latent_decode_manifest.json" \
+  --config-name robotwin \
+  --fps 10
+```
 
 ## 5. Parallel Eval On Multiple Servers
 

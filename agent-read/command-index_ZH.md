@@ -249,31 +249,80 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 ```
 
 如果你想多测几次，改的是 client 端的 `--test_num`，不是 server 端。
-  我建议你后面跑长一点的 eval 时用这版 client 命令，至少先把 render test 跳过：
 
-  conda activate RoboTwin-lingbot
-  cd /home/zaijia001/vam/RoboTwin-lingbot
+如果你后面想跑更长一点的评测，推荐直接把 render 自检跳过：
 
-  PYTHONWARNINGS=ignore::UserWarning \
-  LINGBOT_SKIP_RENDER_TEST=1 \
-  SAPIEN_RT_DENOISER=none \
-  XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
-  python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
-    --config policy/ACT/deploy_policy.yml \
-    --overrides \
-    --task_name place_can_basket \
-    --task_config demo_clean_large_d435 \
-    --train_config_name 0 \
-    --model_name 0 \
-    --ckpt_setting 0 \
-    --model_tag ckpt5000 \
-    --seed 0 \
-    --policy_name ACT \
-    --save_root ./results_posttrain_eval_step5000 \
-    --video_guidance_scale 5 \
-    --action_guidance_scale 1 \
-    --test_num 10 \
-    --port 29056
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+LINGBOT_SKIP_RENDER_TEST=1 \
+SAPIEN_RT_DENOISER=none \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt5000 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step5000 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 10 \
+  --port 29056
+```
+
+`checkpoint_step_10000` 的临时四元数顺序探针：
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_10000 \
+START_PORT=29060 \
+MASTER_PORT=29070 \
+CUDA_VISIBLE_DEVICES=2 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+CUDA_VISIBLE_DEVICES=3 \
+PYTHONWARNINGS=ignore::UserWarning \
+LINGBOT_SKIP_RENDER_TEST=1 \
+SAPIEN_RT_DENOISER=none \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt10000-wxyzquat \
+  --quat_order_mode robowin_wxyz \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step10000_wxyzquat \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29060
+```
+
+这条探针只改 eval 端的四元数组合方式，不会修复训练数据本身。
 
 Debug smoke 版本：
 

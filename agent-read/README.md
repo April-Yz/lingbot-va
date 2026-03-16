@@ -53,6 +53,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - Project-local `AGENTS.md` files now record the standing rules for debug logs, command-index synchronization, and scope protection for `lingbot-va` and `RoboTwin-lingbot`.
 - Added a dedicated baseline data-processing audit at `agent-read/baseline/v1.5_dataprocess.md` tracing RoboTwin raw `endpose` format through LingBot preprocessing, training data loading, and eval reconstruction.
 - The current audit conclusion is that translation ordering looks consistent, but quaternion handling is very likely inconsistent: RoboTwin stores `wxyz`, while LingBot preprocessing/eval helpers currently treat those values as `xyzw`.
+- The RoboTwin eval client now exposes a temporary `quat_order_mode` debug switch so the same checkpoint can be evaluated with legacy quaternion handling or a `robowin_wxyz` compatibility path.
+- A dedicated quaternion-order smoke-test debug record now exists at `agent-read/baseline/debug-quat-order-place_can_basket-v1.md` and the Chinese mirror `agent-read/baseline/debug-quat-order-place_can_basket-v1_ZH.md`.
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`

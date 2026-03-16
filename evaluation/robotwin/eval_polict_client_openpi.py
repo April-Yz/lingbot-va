@@ -73,6 +73,16 @@ def build_episode_artifact_name(prefix: str, episode_idx: int, success: bool, se
     return f"{prefix}episode{episode_idx:03d}-seed{seed}-{outcome}{ext}"
 
 
+def reorder_quat_wxyz_to_xyzw(quat: np.ndarray) -> np.ndarray:
+    quat = np.asarray(quat, dtype=np.float64)
+    return np.array([quat[1], quat[2], quat[3], quat[0]], dtype=np.float64)
+
+
+def reorder_quat_xyzw_to_wxyz(quat: np.ndarray) -> np.ndarray:
+    quat = np.asarray(quat, dtype=np.float64)
+    return np.array([quat[3], quat[0], quat[1], quat[2]], dtype=np.float64)
+
+
 def rename_eval_video_with_outcome(video_dir: Path, episode_idx: int, success: bool, seed: int) -> str | None:
     original_path = Path(video_dir) / f"episode{episode_idx}.mp4"
     if not original_path.exists():
@@ -333,6 +343,7 @@ def main(usr_args):
     video_guidance_scale = usr_args["video_guidance_scale"]
     action_guidance_scale = usr_args["action_guidance_scale"]
     model_tag = usr_args.get("model_tag")
+    quat_order_mode = usr_args.get("quat_order_mode", "legacy_xyzw")
     instruction_type = 'seen'
     save_dir = None
     video_save_dir = None
@@ -348,6 +359,7 @@ def main(usr_args):
     args["expert_check"] = usr_args.get("expert_check", True)
     args["step_limit_override"] = usr_args.get("step_limit_override")
     args["model_tag"] = model_tag
+    args["quat_order_mode"] = quat_order_mode
 
     embodiment_type = args.get("embodiment")
     embodiment_config_path = os.path.join(CONFIGS_PATH, "_embodiment_config.yml")
@@ -416,6 +428,7 @@ def main(usr_args):
     print("\033[95mExpert Check:\033[0m " + str(args.get("expert_check", True)))
     if model_tag:
         print("\033[95mModel Tag:\033[0m " + str(model_tag))
+    print("\033[95mQuat Order Mode:\033[0m " + str(quat_order_mode))
 
     print("\033[94mHead Camera Config:\033[0m " + str(args["camera"]["head_camera_type"]) + f", " +
           str(args["camera"]["collect_head_camera"]))
@@ -456,6 +469,7 @@ def main(usr_args):
         file.write(f"Timestamp: {current_time}\n\n")
         if model_tag:
             file.write(f"Model Tag: {model_tag}\n\n")
+        file.write(f"Quat Order Mode: {quat_order_mode}\n\n")
         file.write(f"Instruction Type: {instruction_type}\n\n")
         file.write(f"Success Rate: {float(np.array(suc_nums)[0] / test_num):.4f}\n\n")
         file.write(f"Episode Manifest: {args['episode_manifest_path']}\n")
@@ -478,9 +492,30 @@ def add_eef_pose(new_pose, init_pose):
     out_trans = new_pose[:3] + init_pose[:3]
     return np.concatenate([out_trans, out_rot, new_pose[7:8]])
 
-def add_init_pose(new_pose, init_pose):
-    left_pose = add_eef_pose(new_pose[:8], init_pose[:8])
-    right_pose = add_eef_pose(new_pose[8:], init_pose[8:])
+
+def add_eef_pose_with_quat_mode(new_pose, init_pose, quat_order_mode="legacy_xyzw"):
+    new_pose = np.asarray(new_pose, dtype=np.float64)
+    init_pose = np.asarray(init_pose, dtype=np.float64)
+
+    if quat_order_mode == "legacy_xyzw":
+        return add_eef_pose(new_pose, init_pose)
+    if quat_order_mode != "robowin_wxyz":
+        raise ValueError(
+            f"Unsupported quat_order_mode: {quat_order_mode}. "
+            "Expected 'legacy_xyzw' or 'robowin_wxyz'."
+        )
+
+    new_pose_rot = R.from_quat(reorder_quat_wxyz_to_xyzw(new_pose[3:7])[None])
+    init_pose_rot = R.from_quat(reorder_quat_wxyz_to_xyzw(init_pose[3:7])[None])
+    out_rot_xyzw = (init_pose_rot * new_pose_rot).as_quat().reshape(-1)
+    out_rot_wxyz = reorder_quat_xyzw_to_wxyz(out_rot_xyzw)
+    out_trans = new_pose[:3] + init_pose[:3]
+    return np.concatenate([out_trans, out_rot_wxyz, new_pose[7:8]])
+
+
+def add_init_pose(new_pose, init_pose, quat_order_mode="legacy_xyzw"):
+    left_pose = add_eef_pose_with_quat_mode(new_pose[:8], init_pose[:8], quat_order_mode=quat_order_mode)
+    right_pose = add_eef_pose_with_quat_mode(new_pose[8:], init_pose[8:], quat_order_mode=quat_order_mode)
     return np.concatenate([left_pose, right_pose])
 
 def eval_policy(task_name,
@@ -638,7 +673,11 @@ def eval_policy(task_name,
                             ee_action[13:14]
                         ])
                     elif action.shape[0] == 16:
-                        ee_action =  add_init_pose(ee_action, inint_eef_pose)
+                        ee_action = add_init_pose(
+                            ee_action,
+                            inint_eef_pose,
+                            quat_order_mode=args.get("quat_order_mode", "legacy_xyzw"),
+                        )
                         ee_action = np.concatenate([
                             ee_action[:3],
                             ee_action[3:7] / np.linalg.norm(ee_action[3:7]),
@@ -728,6 +767,7 @@ def eval_policy(task_name,
                 "task_config": args["task_config"],
                 "ckpt_setting": args["ckpt_setting"],
                 "model_tag": args.get("model_tag"),
+                "quat_order_mode": args.get("quat_order_mode", "legacy_xyzw"),
                 "st_seed": int(st_seed),
                 "episodes": episode_records,
             },
@@ -737,6 +777,7 @@ def eval_policy(task_name,
         print(
             f"\033[93m{task_name}\033[0m | \033[94m{args['policy_name']}\033[0m | \033[92m{args['task_config']}\033[0m | \033[91m{args['ckpt_setting']}\033[0m"
             + (f" | \033[96m{args['model_tag']}\033[0m" if args.get("model_tag") else "")
+            + f" | quat={args.get('quat_order_mode', 'legacy_xyzw')}"
             + "\n"
             f"Success rate: \033[96m{TASK_ENV.suc}/{TASK_ENV.test_num}\033[0m => \033[95m{round(TASK_ENV.suc/TASK_ENV.test_num*100, 1)}%\033[0m, current seed: \033[90m{now_seed}\033[0m\n"
         )

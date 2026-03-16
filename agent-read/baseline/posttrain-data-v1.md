@@ -376,6 +376,49 @@ What this does:
 
 If you want to evaluate more than one episode, change the client-side `--test_num`. The server command does not need a matching test count.
 
+### 8.2.1 Temporary Quaternion-Order Smoke Test
+
+For checkpoint-level debugging only, the RoboTwin eval client now also accepts:
+
+- `--quat_order_mode legacy_xyzw`
+- `--quat_order_mode robowin_wxyz`
+
+The first preserves the old behavior. The second treats RoboTwin pose quaternions as `wxyz` before converting through `scipy`.
+
+Example temporary smoke test for `checkpoint_step_10000`:
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+CUDA_VISIBLE_DEVICES=3 \
+PYTHONWARNINGS=ignore::UserWarning \
+LINGBOT_SKIP_RENDER_TEST=1 \
+SAPIEN_RT_DENOISER=none \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --model_tag ckpt10000-wxyzquat \
+  --quat_order_mode robowin_wxyz \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step10000_wxyzquat \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29060
+```
+
+This is only an eval-side probe. It does not fix the training bundle.
+
 ### 8.3 Debug Smoke Command That Already Produced A First Result
 
 For `place_can_basket`, the first locally verified post-train eval result on March 16, 2026 used a debug-oriented smoke command:

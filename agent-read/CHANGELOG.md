@@ -102,3 +102,7 @@
 - Updated the bilingual decoder command docs to include explicit `CUDA_VISIBLE_DEVICES=...` examples and a note that the `clip_output` line is a benign warning.
 - Added `agent-read/baseline/v1.5_dataprocess.md`, a focused audit of RoboTwin raw data collection versus LingBot post-train preprocessing.
 - Recorded a high-confidence consistency issue in that audit: RoboTwin raw `endpose` appears to be stored as `wxyz`, while LingBot conversion, dataset-relative-pose logic, and eval pose composition currently treat the quaternion block as `xyzw`.
+- Added a temporary `quat_order_mode` debug switch to `evaluation/robotwin/eval_polict_client_openpi.py` so eval can compare the legacy quaternion composition path against a RoboTwin `wxyz` compatibility path without changing training code.
+- Recorded the March 16, 2026 `checkpoint_step_10000` smoke comparison in:
+  - `agent-read/baseline/debug-quat-order-place_can_basket-v1.md`
+  - `agent-read/baseline/debug-quat-order-place_can_basket-v1_ZH.md`
