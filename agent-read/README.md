@@ -51,7 +51,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - `use_dsrl=false` still produces the original action path in mock mode
   - `use_dsrl=true` injects steering noise with shape `[1, 30, 2, 16, 1]`
   - local embodied-SAC metrics are emitted by the new trainer in mock mode
-- Full RoboTwin online single-task training for the new DSRL entry is still blocked on this machine by the RoboTwin `pytorch3d` dependency chain, which currently cannot be built against the available CUDA 12.1 toolchain for Blackwell `sm_120`.
+- Full RoboTwin online single-task training for the new DSRL entry is now runnable on this machine for RGB-based tasks. On March 16, 2026, a `click_bell` run completed one full online episode, logged SAC metrics at steps `2`, `3`, and `4`, and exited cleanly with `current_run_status: "finished_no_success"`.
+- `pytorch3d` still is not installed on this machine, but `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
 - The detailed implementation handoff for this feature is in `agent-read/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/env_change_log.md`.
 
 ## Current Evaluation Conclusions

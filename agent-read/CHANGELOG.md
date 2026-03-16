@@ -40,4 +40,12 @@
   - `use_dsrl=false` stayed on the original action path
   - `use_dsrl=true` injected steering noise with shape `[1, 30, 2, 16, 1]`
   - the local embodied-SAC trainer emitted actor / critic / alpha metrics on the first synthetic update
-- Confirmed the remaining blocker for full RoboTwin online training: the host cannot currently build `pytorch3d` for Blackwell because the available CUDA 12.1 toolchain does not support `compute_120`.
+- Installed `lxml` into the approved `lingbot-va` environment and confirmed that RoboTwin `click_bell.setup_demo(...)` now reaches observation return instead of failing in `sapien` URDF loading.
+- Replaced the RoboTwin camera `pytorch3d` hard-exit fallback with a CPU farthest-point sampler inside `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py`.
+- Updated the action-only DSRL training entry to distinguish `blocked_on_robowin_env`, `finished_no_success`, `finished_success`, and `mock_validated_only` in `final/report`.
+- Confirmed a full March 16, 2026 `click_bell` online action-only DSRL run:
+  - environment reset completed
+  - LingBot generated online actions
+  - RoboTwin stepped through the episode
+  - replay insertion and SAC updates were logged at global steps `2`, `3`, and `4`
+  - the run exited cleanly with `current_run_status: "finished_no_success"` and no residual process

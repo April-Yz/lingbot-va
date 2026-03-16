@@ -24,7 +24,15 @@ This change set implements the minimum viable `lingbot_action_only_dsrl` baselin
     - added mock validation before RoboTwin startup
     - added explicit logging for `use_dsrl=false`, `use_dsrl=true`, optimizer setup, and SAC metrics
     - added graceful reporting when RoboTwin startup is blocked by environment/runtime issues
+    - updated final status reporting to distinguish `blocked_on_robowin_env`, `finished_no_success`, `finished_success`, and `mock_validated_only`
   - Backward compatibility: additive only.
+
+- `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py`
+  - Why: RoboTwin still imported without `pytorch3d`, but the previous fallback would hard-exit if farthest-point sampling was ever requested.
+  - What changed:
+    - replaced the `exit()` fallback with a deterministic CPU farthest-point sampler
+    - the fallback now returns the same `(sampled_points, indices)` structure expected by downstream code
+  - Backward compatibility: preserved. When `pytorch3d` exists, the original fast path is still used.
 
 - `agent-read/README.md`
   - Why: project overview must remain current.
@@ -100,3 +108,4 @@ This change set implements the minimum viable `lingbot_action_only_dsrl` baselin
 - Optimizer scope: only steering actor / critic / alpha are optimized.
 - Backward compatibility with DSRL disabled: preserved and validated in mock mode.
 - RoboTwin single-task startup: still blocked on the local `pytorch3d` / Blackwell toolchain mismatch during RoboTwin seed validation.
+ - RoboTwin single-task startup: no longer blocked by seed validation after installing `lxml`; a full `click_bell` online episode now completes end-to-end in the `lingbot-va` environment.

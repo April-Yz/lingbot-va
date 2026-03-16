@@ -56,8 +56,26 @@
 - Whether it succeeded: `no`
 - How it was verified: the build failed in `nvcc` with `Unsupported gpu architecture 'compute_120'` because the host CUDA toolchain is `12.1` while the GPU is Blackwell `sm_120`.
 
+### Entry 7
+- Datetime: `2026-03-16`
+- Conda environment: `lingbot-va`
+- Command executed: `pip install lxml`
+- What changed: installed `lxml`.
+- Why it was needed: RoboTwin online task startup reached `sapien` URDF loading and then failed with `ModuleNotFoundError: No module named 'lxml'`.
+- Whether it succeeded: `yes`
+- How it was verified: reran `click_bell.setup_demo(...)` inside the LingBot action-only pipeline and confirmed the environment initialized and returned observations.
+
+### Entry 8
+- Datetime: `2026-03-16`
+- Conda environment: `RoboTwin-lingbot`
+- Command executed: `pip install lxml`
+- What changed: no package change was needed because `lxml` was already present.
+- Why it was needed: the paired RoboTwin environment was checked to keep the two approved environments aligned for follow-up debugging.
+- Whether it succeeded: `yes`
+- How it was verified: `pip` reported `Requirement already satisfied: lxml`.
+
 ## Notes
 
 - No new conda environments were created.
 - No system-level packages were modified.
-- All environment changes in this implementation pass were limited to the already approved `lingbot-va` conda environment.
+- All environment changes in this implementation pass were limited to the already approved `lingbot-va` and `RoboTwin-lingbot` conda environments.

@@ -122,6 +122,8 @@ def train_single_task(config):
 
     metrics_history = []
     total_success = 0
+    episodes_completed = 0
+    blocked_error = None
     task_env = None
     try:
         robowin_root = bootstrap_robowin_root(config["env"]["robowin_root"])
@@ -228,6 +230,7 @@ def train_single_task(config):
                     metrics_history.append(metrics)
 
             task_env.close_env(clear_cache=True)
+            episodes_completed += 1
             episode_summary = {
                 "episode_idx": episode_idx,
                 "seed": episode_seed,
@@ -237,10 +240,11 @@ def train_single_task(config):
             }
             log_dict("episode/summary", episode_summary)
     except Exception as exc:
+        blocked_error = str(exc)
         log_dict(
             "robowin/blocker",
             {
-                "error": str(exc),
+                "error": blocked_error,
                 "current_run_status": "blocked_on_robowin_env",
             },
         )
@@ -251,13 +255,22 @@ def train_single_task(config):
         except Exception:
             pass
 
+    if blocked_error is not None:
+        current_run_status = "blocked_on_robowin_env"
+    elif total_success > 0:
+        current_run_status = "finished_success"
+    elif episodes_completed > 0:
+        current_run_status = "finished_no_success"
+    else:
+        current_run_status = "mock_validated_only"
+
     final_report = {
         "episodes": int(config["runner"].get("max_episodes", 1)),
+        "episodes_completed": episodes_completed,
         "successes": total_success,
         "metrics_logged": len(metrics_history),
-        "current_run_status": (
-            "finished" if total_success > 0 else "mock_validated_or_blocked"
-        ),
+        "current_run_status": current_run_status,
+        "blocked_error": blocked_error,
     }
     log_dict("final/report", final_report)
     return final_report

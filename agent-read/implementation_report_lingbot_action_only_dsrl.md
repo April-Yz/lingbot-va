@@ -220,7 +220,7 @@ Observed log:
 
 ### 4. RoboTwin single-task startup
 
-Attempted with:
+Validated with:
 
 - task: `click_bell`
 - config: `demo_clean`
@@ -228,20 +228,21 @@ Attempted with:
 
 Current result:
 
-- not fully runnable yet
-- blocked in RoboTwin seed validation / setup because the local `pytorch3d` path cannot be built on this Blackwell host with the available CUDA 12.1 toolchain
+- online pipeline now runs end-to-end for one episode
+- the March 16, 2026 validation completed with `current_run_status: "finished_no_success"`
+- the task itself did not succeed on that run (`successes: 0`), but the environment reset, observation formatting, LingBot action generation, RoboTwin stepping, replay insertion, and SAC updates all completed without crashing
 
 ## Known Limitations
 
-- RoboTwin single-task runtime is still blocked by `pytorch3d` on this machine.
+- RoboTwin online runtime is now functional, but task success is not yet guaranteed; the validated `click_bell` online run finished with zero successes.
 - The current trainer is local to `lingbot-va`; it mirrors RLinf DSRL style but does not register itself into the RLinf repo.
 - The current implementation freezes the full LingBot stack instead of selectively freezing named backbone/future/action-decoder submodules.
-- Mock validation proves the steering path and SAC updates, but it does not replace a full RoboTwin online training run.
+- `pytorch3d` still is not installed on this machine. The patched RoboTwin camera path now has a CPU farthest-point fallback, so this is no longer a hard blocker for the validated RGB-based online run.
 
 ## Next-Step Suggestions
 
-1. Resolve the RoboTwin `pytorch3d` dependency on Blackwell, ideally with a toolchain that supports `sm_120`.
-2. Once RoboTwin setup succeeds, rerun the new training entry and verify the first online transition plus SAC update.
+1. Improve task success rate for the online run, starting from `click_bell`, since the current end-to-end pipeline completes but does not yet solve the task.
+2. If point-cloud-heavy workflows are needed later, replace the CPU fallback with a proper Blackwell-compatible `pytorch3d` build when a matching CUDA toolchain is available.
 3. If later authorized, register the same wrapper into RLinf proper instead of keeping the trainer local to `lingbot-va`.
 
 ## Minimal Reproduction
