@@ -68,6 +68,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -99,6 +100,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -175,6 +177,34 @@ client 端的 `--port` 只决定它连哪个 websocket server，不决定 server
 - 你选中的那张物理卡已经很满了
 - 只是在进程内部，它被编号成了本地 `GPU 0`
 
+### 3.4 OIDN 渲染日志是什么意思
+
+如果 client 一直打印这种日志：
+
+```text
+[svulkan2] [error] OIDN Error: invalid handle
+```
+
+它表示的是 SAPIEN / svulkan2 渲染器侧的 denoiser 日志，不是动作模型本身报错。
+
+在当前工作区里，更推荐的 client 启动方式是显式带上：
+
+- `SAPIEN_RT_DENOISER=none`
+
+并且也支持直接跳过启动时的 render 自检：
+
+- `LINGBOT_SKIP_RENDER_TEST=1`
+
+更安静的推荐启动方式：
+
+```bash
+PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
+LINGBOT_SKIP_RENDER_TEST=1 \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python ...
+```
+
 ## 4. 评测本地继续训练出来的 Post-Train Checkpoint
 
 Server：
@@ -196,6 +226,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -221,6 +252,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \

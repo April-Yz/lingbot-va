@@ -762,7 +762,14 @@ def parse_args_and_config():
 
 
 if __name__ == "__main__":
-    
-    Sapien_TEST()
+    skip_render_test = os.environ.get("LINGBOT_SKIP_RENDER_TEST", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+    if not skip_render_test:
+        Sapien_TEST()
     usr_args = parse_args_and_config()
     main(usr_args)

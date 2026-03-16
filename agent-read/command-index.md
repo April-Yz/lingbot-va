@@ -68,6 +68,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -99,6 +100,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -165,6 +167,34 @@ So an OOM that says `GPU 0` does not mean the client or server fell back to phys
 
 The client does not choose the server GPU. `--port` only chooses which websocket server the client connects to.
 
+### 3.4 OIDN Renderer Log Note
+
+If the client prints lines like:
+
+```text
+[svulkan2] [error] OIDN Error: invalid handle
+```
+
+that is a renderer-side denoiser log from SAPIEN / svulkan2, not an action-model error.
+
+In this workspace, the safer client launch pattern is:
+
+- `SAPIEN_RT_DENOISER=none`
+
+and you can also skip the startup render self-check entirely:
+
+- `LINGBOT_SKIP_RENDER_TEST=1`
+
+Recommended quiet client launch pattern:
+
+```bash
+PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
+LINGBOT_SKIP_RENDER_TEST=1 \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python ...
+```
+
 ## 4. Eval Local Post-Train Checkpoint
 
 Server:
@@ -186,6 +216,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \
@@ -211,6 +242,7 @@ conda activate RoboTwin-lingbot
 cd /home/zaijia001/vam/RoboTwin-lingbot
 
 PYTHONWARNINGS=ignore::UserWarning \
+SAPIEN_RT_DENOISER=none \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
   --config policy/ACT/deploy_policy.yml \

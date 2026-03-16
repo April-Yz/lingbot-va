@@ -45,6 +45,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - a note explaining why `place_can_basket` can be much slower than earlier light-task evals
   - explicit parallel-server port override examples using `START_PORT` and `MASTER_PORT`
   - a CUDA device-remapping note explaining why `CUDA_VISIBLE_DEVICES=2` still appears as local `GPU 0` in PyTorch OOM logs
+  - a note explaining the non-fatal `OIDN Error: invalid handle` renderer logs plus the recommended `SAPIEN_RT_DENOISER=none` and `LINGBOT_SKIP_RENDER_TEST=1` client launch pattern
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`
