@@ -217,7 +217,7 @@ cd /home/zaijia001/vam/lingbot-va
 
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=2 \
 bash evaluation/robotwin/launch_server.sh
 ```
 
@@ -249,6 +249,31 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 ```
 
 如果你想多测几次，改的是 client 端的 `--test_num`，不是 server 端。
+  我建议你后面跑长一点的 eval 时用这版 client 命令，至少先把 render test 跳过：
+
+  conda activate RoboTwin-lingbot
+  cd /home/zaijia001/vam/RoboTwin-lingbot
+
+  PYTHONWARNINGS=ignore::UserWarning \
+  LINGBOT_SKIP_RENDER_TEST=1 \
+  SAPIEN_RT_DENOISER=none \
+  XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+  python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+    --config policy/ACT/deploy_policy.yml \
+    --overrides \
+    --task_name place_can_basket \
+    --task_config demo_clean_large_d435 \
+    --train_config_name 0 \
+    --model_name 0 \
+    --ckpt_setting 0 \
+    --model_tag ckpt5000 \
+    --seed 0 \
+    --policy_name ACT \
+    --save_root ./results_posttrain_eval_step5000 \
+    --video_guidance_scale 5 \
+    --action_guidance_scale 1 \
+    --test_num 10 \
+    --port 29056
 
 Debug smoke 版本：
 
@@ -292,6 +317,7 @@ eval 跑完以后，可以拿这次运行生成的 manifest 再做一次 latent 
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+CUDA_VISIBLE_DEVICES=2 \
 python evaluation/robotwin/decode_saved_latents.py \
   --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
   --config-name robotwin \
@@ -303,6 +329,8 @@ python evaluation/robotwin/decode_saved_latents.py \
 - 把 `<timestamp>` 换成这次 eval 真正生成的时间目录
 - manifest 路径也会写进对应 run 的 `_result.txt`
 - 解码后的视频会和原始 eval 结果放在同一组输出目录里，同时还会生成 `latent_decode_results.json`
+- `CUDA_VISIBLE_DEVICES=2` 只是示例，换成你想给 decoder 用的空闲显卡即可
+- `The config attributes {'clip_output': False} ... will be ignored` 这行是 diffusers 的兼容性 warning，不是报错；如果只有这一条提示，decoder 会继续正常执行
 
 ## 5. 并行评测时如何改端口
 

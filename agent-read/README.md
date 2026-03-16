@@ -49,6 +49,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - RoboTwin eval now accepts an optional `model_tag` field in the client overrides; when present, the tag is added to the `eval_result/...` directory path, manifest, console summary, and `_result.txt`.
 - The baseline docs and command index now explicitly record that multi-episode eval is controlled by the client-side `--test_num`, not by the server command.
 - The baseline docs and command index now also include the post-eval latent decoder command for rerunning `decode_saved_latents.py` from a saved `latent_decode_manifest.json`.
+- The latent decoder examples now also pin a GPU explicitly with `CUDA_VISIBLE_DEVICES=...` and document that the `clip_output` message is a benign warning rather than a fatal error.
+- Project-local `AGENTS.md` files now record the standing rules for debug logs, command-index synchronization, and scope protection for `lingbot-va` and `RoboTwin-lingbot`.
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`

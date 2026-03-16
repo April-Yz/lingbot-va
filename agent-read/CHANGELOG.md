@@ -98,3 +98,5 @@
   - show `model_tag` examples for official and local checkpoints
   - clarify that multi-episode eval uses the client-side `--test_num`
   - document the post-eval latent decoder command using `decode_saved_latents.py`
+- Added project-local `AGENTS.md` files for `lingbot-va` and `RoboTwin-lingbot` so scope boundaries, debug-log expectations, and command-sync rules are written down in-repo.
+- Updated the bilingual decoder command docs to include explicit `CUDA_VISIBLE_DEVICES=...` examples and a note that the `clip_output` line is a benign warning.

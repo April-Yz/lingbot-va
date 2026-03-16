@@ -282,6 +282,7 @@ After an eval run finishes, you can decode the saved latent rollout by pointing 
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+CUDA_VISIBLE_DEVICES=2 \
 python evaluation/robotwin/decode_saved_latents.py \
   --manifest /home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/ckpt5000/<timestamp>/latent_decode_manifest.json \
   --config-name robotwin \
@@ -293,6 +294,8 @@ Notes:
 - Replace `<timestamp>` with the actual eval timestamp directory.
 - The manifest path is also recorded inside that run's `_result.txt`.
 - Decoded videos will be written next to the original eval outputs, and the decoder will also create `latent_decode_results.json`.
+- Replace `CUDA_VISIBLE_DEVICES=2` with whichever GPU you want the decoder to use.
+- The line `The config attributes {'clip_output': False} ... will be ignored` is a non-fatal diffusers warning; decoding can continue normally when that is the only warning.
 
 ## 5. Parallel Eval On Multiple Servers
 
