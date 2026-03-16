@@ -89,3 +89,4 @@
   - a light-task official-checkpoint comparison command (`click_bell`)
   - a concrete explanation of why `place_can_basket` is much slower under the current Curobo fallback state
   - explicit multi-server port override examples using `START_PORT` and `MASTER_PORT`
+- Updated the bilingual command index to recommend `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in server launch examples and to explain CUDA device remapping (`CUDA_VISIBLE_DEVICES=2` becomes process-local `GPU 0` inside PyTorch).

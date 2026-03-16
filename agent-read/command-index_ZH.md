@@ -55,8 +55,9 @@ Server：
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=2 \
 bash evaluation/robotwin/launch_server.sh
 ```
 
@@ -148,6 +149,32 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 
 因此当前重任务只能走 `MPLib` fallback，看起来就会慢很多。
 
+### 3.3 CUDA 编号为什么会显示成 GPU 0
+
+如果你这样启动 server：
+
+```bash
+CUDA_VISIBLE_DEVICES=2 bash evaluation/robotwin/launch_server.sh
+```
+
+那么 PyTorch 会把“物理 GPU 2”重新映射成这个进程自己看到的本地设备列表。
+
+所以在 server 进程内部：
+
+- 物理 GPU `2`
+- 会变成进程里的本地 `cuda:0`
+
+这就是为什么你明明指定了 `CUDA_VISIBLE_DEVICES=2`，但 OOM 日志里仍然会写 `GPU 0`。
+
+这并不表示 client 把 server 拉回了物理 `GPU 0`。
+
+client 端的 `--port` 只决定它连哪个 websocket server，不决定 server 用哪张卡。
+
+所以如果你看到“GPU 0 只剩几十 MiB”的 OOM，正确理解应该是：
+
+- 你选中的那张物理卡已经很满了
+- 只是在进程内部，它被编号成了本地 `GPU 0`
+
 ## 4. 评测本地继续训练出来的 Post-Train Checkpoint
 
 Server：
@@ -156,6 +183,7 @@ Server：
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
 CUDA_VISIBLE_DEVICES=1 \
 bash evaluation/robotwin/launch_server.sh
@@ -231,6 +259,7 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 START_PORT=29058 \
 MASTER_PORT=29068 \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
@@ -244,6 +273,7 @@ bash evaluation/robotwin/launch_server.sh
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 START_PORT=29059 \
 MASTER_PORT=29069 \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \

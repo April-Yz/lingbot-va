@@ -44,6 +44,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - a light-task official-checkpoint sanity-check command (`click_bell`)
   - a note explaining why `place_can_basket` can be much slower than earlier light-task evals
   - explicit parallel-server port override examples using `START_PORT` and `MASTER_PORT`
+  - a CUDA device-remapping note explaining why `CUDA_VISIBLE_DEVICES=2` still appears as local `GPU 0` in PyTorch OOM logs
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`

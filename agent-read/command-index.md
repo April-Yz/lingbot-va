@@ -55,6 +55,7 @@ Server:
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
 CUDA_VISIBLE_DEVICES=1 \
 bash evaluation/robotwin/launch_server.sh
@@ -142,6 +143,28 @@ So the current blocker is not "the conda env has no CUDA 12.8 support". The bloc
 
 As a result, heavy tasks currently run through the `MPLib` fallback and look much slower.
 
+### 3.3 CUDA Device Numbering Note
+
+If you launch the server with:
+
+```bash
+CUDA_VISIBLE_DEVICES=2 bash evaluation/robotwin/launch_server.sh
+```
+
+then PyTorch remaps that physical GPU into the process-local device list.
+
+Inside the server process:
+
+- physical GPU `2`
+- becomes local `cuda:0`
+
+So an OOM that says `GPU 0` does not mean the client or server fell back to physical GPU `0`. It usually means:
+
+- the process is correctly restricted to physical GPU `2`
+- but inside that isolated process view, PyTorch labels it as local `GPU 0`
+
+The client does not choose the server GPU. `--port` only chooses which websocket server the client connects to.
+
 ## 4. Eval Local Post-Train Checkpoint
 
 Server:
@@ -150,6 +173,7 @@ Server:
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
 CUDA_VISIBLE_DEVICES=1 \
 bash evaluation/robotwin/launch_server.sh
@@ -222,6 +246,7 @@ Example server A:
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 START_PORT=29058 \
 MASTER_PORT=29068 \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
@@ -235,6 +260,7 @@ Example server B:
 conda activate lingbot-va
 cd /home/zaijia001/vam/lingbot-va
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 START_PORT=29059 \
 MASTER_PORT=29069 \
 MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000 \
