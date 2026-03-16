@@ -38,6 +38,61 @@
 
 同时确认该模型目录下 `transformer/config.json` 的 `attn_mode` 仍然是推理可用的 `"torch"` 或 `"flashattn"`，不要保留训练用的 `"flex"`。
 
+## 3.1 如果要直接用官方 RoboTwin post-train checkpoint 测 `place_can_basket`
+
+如果你要测的是作者官方给的 RoboTwin post-train 权重，也就是：
+
+- `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
+
+那么最直接的做法是显式起一个 server，再从 RoboTwin client 连过去。
+
+### server
+
+```bash
+conda activate lingbot-va
+cd /home/zaijia001/vam/lingbot-va
+
+MODEL_PATH=/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin \
+CUDA_VISIBLE_DEVICES=1 \
+bash evaluation/robotwin/launch_server.sh
+```
+
+### client
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_official_posttrain_place_can_basket \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29056
+```
+
+说明：
+
+- 这条命令测的是“官方 RoboTwin post-train checkpoint”，不是你本地继续 post-train 出来的 `checkpoint_step_xxxx`
+- 如果只是先看链路是否通，`--test_num 1` 就够
+- 如果这个任务的上游 seed 过滤太脆，也可以临时改成 debug smoke 版本：
+  - `--expert_check false`
+  - `--step_limit_override 60`
+- 输出会落在：
+  - `RoboTwin-lingbot/results_official_posttrain_place_can_basket/`
+  - `RoboTwin-lingbot/eval_result/place_can_basket/...`
+
 ## 4. 评测时模型的外部输入是什么
 
 RoboTwin client 真正发给 LingBot server 的输入在 `evaluation/robotwin/eval_polict_client_openpi.py` 里组织，核心入口是 `format_obs(...)`。

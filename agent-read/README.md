@@ -37,6 +37,9 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/baseline/eval-test-decoder-v1.md`.
 - The current raw-data-to-posttrain workflow, concrete `place_can_basket` processing run, and direct checkpoint-eval method are documented in `agent-read/baseline/posttrain-data-v1.md`.
 - The March 16, 2026 `place_can_basket` post-train eval debugging record is documented in `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1.md`.
+- A bilingual quick command lookup now lives in:
+  - `agent-read/command-index.md`
+  - `agent-read/command-index_ZH.md`
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`
