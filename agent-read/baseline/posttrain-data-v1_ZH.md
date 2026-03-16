@@ -326,7 +326,57 @@ python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_ope
 - 输出 metrics 和 rollout 视频到 `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
 - client 入口现在会同时把 `lingbot-va` 仓库根目录和 `ROBOTWIN_ROOT` 加进 `sys.path`，所以即使你当前 shell 在 `RoboTwin-lingbot` 目录下，这条绝对路径命令也可以直接运行
 
-### 10.3 如何扩大量评测
+### 10.3 已经实际跑出首个结果的 debug smoke 命令
+
+对 `place_can_basket` 来说，2026-03-16 本机第一次真正跑出 post-train eval 结果时，用的是一条偏 debug 的 smoke 命令：
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step5000_fix4 \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29058
+```
+
+这里两个额外参数是本地 debug 用的：
+
+- `--expert_check false`
+  先跳过任务自己的 expert pre-check。`place_can_basket` 上游 seed 过滤链路比较脆，这样更容易先拿到第一条真正的端到端结果。
+- `--step_limit_override 60`
+  把 episode 步数上限压短，先更快拿到第一条 smoke 结果。
+
+这条命令对应的 server 当时用的是：
+
+- `MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000`
+- `port=29058`
+
+这次 smoke run 已经完整结束，并且产出了第一条 `place_can_basket` 的 post-train eval 结果；不过结果是 `0/1`，不是成功。
+
+这次运行的主要产物路径是：
+
+- metrics：`/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/metrics/place_can_basket/res.json`
+- eval 摘要：`/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/_result.txt`
+- rollout 视频：`/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/visualization/place_can_basket/`
+- manifest：`/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/latent_decode_manifest.json`
+
+### 10.4 如何扩大量评测
 
 - smoke test：`--test_num 1`
 - 小规模成功率估计：`--test_num 10`

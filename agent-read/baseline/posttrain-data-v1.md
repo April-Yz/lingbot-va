@@ -372,13 +372,56 @@ What this does:
 - writes metrics and rollout videos under `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000`
 - the client entry now prepends both the `lingbot-va` repo root and `ROBOTWIN_ROOT` to `sys.path`, so this absolute-path command is valid even when your current shell directory is `RoboTwin-lingbot`
 
-### 8.3 Scaling The Eval
+### 8.3 Debug Smoke Command That Already Produced A First Result
+
+For `place_can_basket`, the first locally verified post-train eval result on March 16, 2026 used a debug-oriented smoke command:
+
+```bash
+conda activate RoboTwin-lingbot
+cd /home/zaijia001/vam/RoboTwin-lingbot
+
+PYTHONWARNINGS=ignore::UserWarning \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+python /home/zaijia001/vam/lingbot-va/evaluation/robotwin/eval_polict_client_openpi.py \
+  --config policy/ACT/deploy_policy.yml \
+  --overrides \
+  --task_name place_can_basket \
+  --task_config demo_clean_large_d435 \
+  --train_config_name 0 \
+  --model_name 0 \
+  --ckpt_setting 0 \
+  --seed 0 \
+  --policy_name ACT \
+  --save_root ./results_posttrain_eval_step5000_fix4 \
+  --expert_check false \
+  --step_limit_override 60 \
+  --video_guidance_scale 5 \
+  --action_guidance_scale 1 \
+  --test_num 1 \
+  --port 29058
+```
+
+Notes:
+
+- `--expert_check false` is a local debug override. It skips the task's expert pre-check path, which is useful when upstream seed filtering is too brittle for an initial smoke run.
+- `--step_limit_override 60` is also a debug override. It shortens the run so the first end-to-end result arrives quickly.
+- The matching server command used `MODEL_PATH=/home/zaijia001/vam/lingbot-va/train_out/place_can_basket_demo_clean/checkpoints/checkpoint_step_5000` and port `29058`.
+- This smoke run completed and produced the first actual post-train eval result artifact for `place_can_basket`, but the task result was `0/1`, not a success.
+
+The main artifacts from that run are:
+
+- metrics: `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/metrics/place_can_basket/res.json`
+- eval summary: `/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/_result.txt`
+- rollout video: `/home/zaijia001/vam/RoboTwin-lingbot/results_posttrain_eval_step5000_fix4/stseed-10000/visualization/place_can_basket/`
+- manifest: `/home/zaijia001/vam/RoboTwin-lingbot/eval_result/place_can_basket/ACT/demo_clean_large_d435/0/2026-03-16 15:11:37/latent_decode_manifest.json`
+
+### 8.4 Scaling The Eval
 
 - For a smoke test, keep `--test_num 1`.
 - For a more meaningful single-task estimate, increase `--test_num` to `10` or `100`.
 - For a different task, change `--task_name` and keep `--task_config demo_clean_large_d435` if that task was also recollected with `Large_D435`.
 
-### 8.4 Expected Outputs
+### 8.5 Expected Outputs
 
 After a successful run, the main artifacts are:
 

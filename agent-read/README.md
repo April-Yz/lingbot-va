@@ -36,10 +36,12 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - The most detailed local description of the current RoboTwin model input/output contract, latent flow, and evaluation conclusions is in `agent-read/baseline/lingbot-v0.md`.
 - The latest end-to-end RoboTwin eval run with success-tagged videos and latent decoder outputs is documented in `agent-read/baseline/eval-test-decoder-v1.md`.
 - The current raw-data-to-posttrain workflow, concrete `place_can_basket` processing run, and direct checkpoint-eval method are documented in `agent-read/baseline/posttrain-data-v1.md`.
+- The March 16, 2026 `place_can_basket` post-train eval debugging record is documented in `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1.md`.
 - Chinese baseline mirrors are now available at:
   - `agent-read/baseline/lingbot-v0_ZH.md`
   - `agent-read/baseline/eval-test-decoder-v1_ZH.md`
   - `agent-read/baseline/posttrain-data-v1_ZH.md`
+  - `agent-read/baseline/debug-posttrain-eval-place_can_basket-v1_ZH.md`
 - The post-training converter now assumes recollected `Large_D435` RoboTwin data and validates raw camera frames at `480x640` before conversion.
 - Post-training WandB behavior now preserves existing auth, defaults the project name to `lingbot`, defaults the team/entity to `haoyuan-lingbot`, and supports custom run names via `WANDB_RUN_NAME`.
 - The post-training launcher now auto-detects a Python interpreter from `PYTHON_BIN`, `CONDA_PREFIX`, `python`, or `python3` instead of assuming `python` is on `PATH`.
@@ -51,6 +53,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - `agent-read/baseline/posttrain-data-v1.md` now records the verified 2-GPU baseline command, the failed `--batch-size 2` attempt, the safer accumulation alternative, and the direct checkpoint-eval workflow.
 - The checkpoint-eval workflow now explicitly handles the real training artifact layout: `checkpoint_step_xxxx` usually saves only `transformer/`, so the server loads that transformer from `MODEL_PATH` while continuing to load `vae/`, `tokenizer/`, and `text_encoder/` from the base model root.
 - The RoboTwin eval client entry now also prepends the local `lingbot-va` repo root to `sys.path`, so the documented absolute-path client command works even when launched from inside `RoboTwin-lingbot`.
+- The local RoboTwin eval client now also propagates `expert_check` and `step_limit_override` overrides into the actual task path, which made it possible to obtain a first `place_can_basket` smoke eval result from the post-train `checkpoint_step_5000` on March 16, 2026.
+- The first verified `place_can_basket` post-train smoke eval completed with `expert_check=false`, `step_limit_override=60`, and `test_num=1`; it produced a real `0/1` result plus metrics and video artifacts instead of crashing during startup.
 - The latest post-training notes now also record that `NGPU=2 + batch_size=2` failed locally, and recommend `batch_size=1 + gradient_accumulation_steps=2` as the safer way to increase effective batch.
 - A new local action-only DSRL baseline now exists under `wan_va/action_only_dsrl/`, with a dedicated training entry at `script/run_lingbot_action_only_dsrl.py` and config at `examples/embodiment/config/robotwin_lingbot_action_only_dsrl.yaml`.
 - The action-only DSRL path now injects steering through LingBot's initial action diffusion noise via `VA_Server.sample_actions(..., initial_noise=...)`, while leaving the original random-noise path intact when DSRL is disabled.

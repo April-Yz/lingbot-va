@@ -339,6 +339,8 @@ def main(usr_args):
     args["task_config"] = task_config
     args["ckpt_setting"] = ckpt_setting
     args["save_root"] = save_root
+    args["expert_check"] = usr_args.get("expert_check", True)
+    args["step_limit_override"] = usr_args.get("step_limit_override")
 
     embodiment_type = args.get("embodiment")
     embodiment_config_path = os.path.join(CONFIGS_PATH, "_embodiment_config.yml")
@@ -400,6 +402,7 @@ def main(usr_args):
         print(" - Crazy Random Light Rate: " + str(args["domain_randomization"]["crazy_random_light_rate"]))
     print("\033[95mRandom Table Height:\033[0m " + str(args["domain_randomization"]["random_table_height"]))
     print("\033[95mRandom Head Camera Distance:\033[0m " + str(args["domain_randomization"]["random_head_camera_dis"]))
+    print("\033[95mExpert Check:\033[0m " + str(args.get("expert_check", True)))
 
     print("\033[94mHead Camera Config:\033[0m " + str(args["camera"]["head_camera_type"]) + f", " +
           str(args["camera"]["collect_head_camera"]))
@@ -479,7 +482,9 @@ def eval_policy(task_name,
     print(f"\033[34mTask Name: {args['task_name']}\033[0m")
     print(f"\033[34mPolicy Name: {args['policy_name']}\033[0m")
 
-    expert_check = True
+    expert_check = args.get("expert_check", True)
+    if isinstance(expert_check, str):
+        expert_check = expert_check.strip().lower() in {"1", "true", "yes", "y", "on"}
     TASK_ENV.suc = 0
     TASK_ENV.test_num = 0
 
@@ -501,6 +506,8 @@ def eval_policy(task_name,
         if expert_check:
             try:
                 TASK_ENV.setup_demo(now_ep_num=now_id, seed=now_seed, is_test=True, **args)
+                if args.get("step_limit_override") is not None:
+                    TASK_ENV.step_lim = min(TASK_ENV.step_lim, int(args["step_limit_override"]))
                 episode_info = TASK_ENV.play_once()
                 TASK_ENV.close_env()
             except UnStableError as e:
@@ -527,6 +534,10 @@ def eval_policy(task_name,
         args["render_freq"] = render_freq
 
         TASK_ENV.setup_demo(now_ep_num=now_id, seed=now_seed, is_test=True, **args)
+        if args.get("step_limit_override") is not None:
+            TASK_ENV.step_lim = min(TASK_ENV.step_lim, int(args["step_limit_override"]))
+        if not expert_check:
+            episode_info = getattr(TASK_ENV, "info", {"info": {}})
         episode_info_list = [episode_info["info"]]
         results = generate_episode_descriptions(args["task_name"], episode_info_list, test_num)
         instruction = np.random.choice(results[0][instruction_type])
@@ -690,10 +701,10 @@ def eval_policy(task_name,
             "server_exp_save_root": server_exp_save_root,
             "eval_video_path": eval_video_path,
             "comparison_video_path": str(out_img_file.resolve()),
-            "latent_decode_video_path": str(
+            "latent_decode_video_path": str((
                 Path(TASK_ENV.eval_video_path)
                 / build_episode_artifact_name("latent-decode-", TASK_ENV.test_num, succ, now_seed)
-            ).resolve() if TASK_ENV.eval_video_path is not None else None,
+            ).resolve()) if TASK_ENV.eval_video_path is not None else None,
         })
         write_json(
             {

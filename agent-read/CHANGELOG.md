@@ -79,3 +79,5 @@
   - `agent-read/baseline/posttrain-data-v1_ZH.md`
 - Corrected the post-train checkpoint-eval flow so `MODEL_PATH` can point at a training checkpoint root that only contains `transformer/`; the server now keeps loading `vae/`, `tokenizer/`, and `text_encoder/` from the configured base model root.
 - Corrected the RoboTwin eval client entry so it prepends the local `lingbot-va` repo root to `sys.path`; the documented absolute-path client command now works even when invoked from the `RoboTwin-lingbot` working directory.
+- Corrected the RoboTwin eval client so `expert_check` and `step_limit_override` overrides reach the real task path, so `expert_check=false` can be used as a local smoke-debug mode.
+- Added a March 16, 2026 baseline debug record for `place_can_basket` post-train eval, including root cause analysis for the checkpoint-layout mismatch, client import-path mismatch, task-level `target_pose=None` crash, and the first completed smoke result at `0/1`.
