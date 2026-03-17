@@ -85,6 +85,8 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 - V1 requirement, implementation, change-log, and environment docs now live under `agent-read/v1/`.
 - The detailed implementation handoff for this feature is in `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/v1/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/v1/env_change_log.md`.
 - A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/v1/action_only_v1.4_gap_zh.md`.
+- A new static V2 package now exists under `wan_va/frozen_noise_dsrl/`, with a dedicated config at `examples/embodiment/config/robotwin_lingbot_frozen_noise_dsrl_v2.yaml`, a dedicated training entry at `script/run_lingbot_frozen_noise_dsrl_v2.py`, and a static eval helper at `script/run_lingbot_frozen_noise_eval_v2.sh`.
+- The full V2 bilingual handoff document set now lives under `agent-read/V2/`, and explicitly marks the current result as a static code/documentation integration that still requires runtime validation after migration.
 - The V1 bilingual document set is now available under:
   - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_en.md`
   - `agent-read/v1/task_spec_lingbot_action_only_dsrl_V1_zh.md`

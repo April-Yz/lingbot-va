@@ -1,0 +1,67 @@
+# Frozen LingBot + future-latent-conditioned action-noise optimization.
+# This is a static V2 experiment config. It is added for code and document
+# handoff only and has not been validated on the current server.
+
+env:
+  robowin_root: /home/zaijia001/vam/RoboTwin-lingbot
+  task_name: click_bell
+  task_config: demo_clean_large_d435
+  instruction_type: seen
+
+runner:
+  seed: 10000
+  save_root: /home/zaijia001/vam/lingbot-va/train_out/frozen_noise_dsrl_v2_click_bell
+  max_episodes: 1
+  max_action_chunks: 2
+
+wandb:
+  enable: true
+  project: lingbot
+  entity: haoyuan-lingbot
+  run_name: frozen_noise_click_bell_v2
+  mode: online
+
+policy:
+  lingbot_config_name: robotwin
+  lingbot_model_path: /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin
+  save_root: /home/zaijia001/vam/lingbot-va/visualization/frozen_noise_dsrl_v2
+  local_rank: 0
+  rank: 0
+  world_size: 1
+
+  use_dsrl: true
+  dsrl_mode: frozen_noise_v2
+  freeze_future_video_module: true
+  freeze_inverse_or_action_flow: true
+  train_noise_policy_only: true
+  future_latent_as_condition: true
+  use_rlinf_or_v1_style_training: true
+  detach_future_latent: true
+  use_value_critic: true
+
+  dsrl_noise_injection_mode: initial_noise
+  dsrl_action_noise_dim: 960
+
+  dsrl_state_dim: 30
+  dsrl_num_q_heads: 10
+  dsrl_image_latent_dim: 64
+  dsrl_state_latent_dim: 64
+  dsrl_future_latent_dim: 64
+  dsrl_future_summary_input_dim: 48
+  dsrl_hidden_dims: [128, 128, 128]
+
+algorithm:
+  adv_type: embodied_sac
+  loss_type: embodied_sac
+  gamma: 0.99
+  tau: 0.005
+  actor_lr: 1.0e-4
+  critic_lr: 1.0e-4
+  alpha_lr: 1.0e-4
+  initial_alpha: 0.01
+  target_entropy: -240.0
+  replay_size: 4096
+  batch_size: 1
+  warmup_steps: 1
+  updates_per_step: 1
+  actor_agg_q: mean

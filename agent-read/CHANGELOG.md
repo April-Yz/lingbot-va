@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-03-18
+
+- Added a new static V2 package under `wan_va/frozen_noise_dsrl/` for the Frozen LingBot + Future-Latent-Conditioned Action Noise experiment, including a dedicated future-latent adapter, noise policy, critic wrapper, and local embodied-SAC style trainer.
+- Added `script/run_lingbot_frozen_noise_dsrl_v2.py` as the dedicated V2 training entrypoint and `script/run_lingbot_frozen_noise_eval_v2.sh` as the dedicated static V2 eval helper.
+- Added `examples/embodiment/config/robotwin_lingbot_frozen_noise_dsrl_v2.yaml` with explicit V2 freeze and conditioning flags:
+  - `freeze_future_video_module: true`
+  - `freeze_inverse_or_action_flow: true`
+  - `train_noise_policy_only: true`
+  - `future_latent_as_condition: true`
+  - `use_rlinf_or_v1_style_training: true`
+- Added the full bilingual V2 document set under `agent-read/V2/`:
+  - `IMPLEMENTATION_REPORT_V2_CN.md`
+  - `IMPLEMENTATION_REPORT_V2_EN.md`
+  - `CHANGELOG_V2_CN.md`
+  - `CHANGELOG_V2_EN.md`
+  - `ENVIRONMENT_RECORD_V2_CN.md`
+  - `ENVIRONMENT_RECORD_V2_EN.md`
+  - `RUN_GUIDE_V2_CN.md`
+  - `RUN_GUIDE_V2_EN.md`
+  - `REPRO_CHECKLIST_V2_CN.md`
+  - `REPRO_CHECKLIST_V2_EN.md`
+  - `ENV_PREDICTION_V2_CN.md`
+  - `ENV_PREDICTION_V2_EN.md`
+- Updated `agent-read/README.md` so the project overview now records the V2 static integration and the location of the bilingual V2 handoff docs.
+- No training, evaluation, environment test, dependency install, or environment change was performed for this V2 task. The current result is a static integration only and still requires runtime validation after migration.
+
 ## 2026-03-14
 
 - Created the project-specific `lingbot-va` conda environment.
