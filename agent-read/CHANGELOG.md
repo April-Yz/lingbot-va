@@ -26,6 +26,10 @@
 - Updated `agent-read/README.md` so the project overview now records the V2 static integration and the location of the bilingual V2 handoff docs.
 - No training, evaluation, environment test, dependency install, or environment change was performed for this V2 task. The current result is a static integration only and still requires runtime validation after migration.
 
+## 2026-03-18
+
+- Added `agent-read/env-setup-agent.md`, an agent-facing environment setup runbook for this workspace.
+
 ## 2026-03-14
 
 - Created the project-specific `lingbot-va` conda environment.
