@@ -47,6 +47,28 @@ def load_config(path):
         return yaml.safe_load(handle)
 
 
+def _resolve_repo_path(path_value):
+    path = Path(path_value).expanduser()
+    if not path.is_absolute():
+        path = (REPO_ROOT / path).resolve()
+    return path
+
+
+def normalize_config_paths(config):
+    config = dict(config)
+    config["env"] = dict(config["env"])
+    config["runner"] = dict(config["runner"])
+    config["policy"] = dict(config["policy"])
+
+    config["env"]["robowin_root"] = str(_resolve_repo_path(config["env"]["robowin_root"]))
+    config["runner"]["save_root"] = str(_resolve_repo_path(config["runner"]["save_root"]))
+    config["policy"]["lingbot_model_path"] = str(
+        _resolve_repo_path(config["policy"]["lingbot_model_path"])
+    )
+    config["policy"]["save_root"] = str(_resolve_repo_path(config["policy"]["save_root"]))
+    return config
+
+
 def log_dict(title, payload):
     LOGGER.info("%s: %s", title, json.dumps(payload, sort_keys=True, default=str))
 
@@ -66,7 +88,7 @@ def init_wandb(config):
             login_kwargs["host"] = wandb_base_url
         wandb.login(**login_kwargs)
 
-    return wandb.init(
+    run = wandb.init(
         entity=os.getenv(
             "WANDB_TEAM_NAME",
             wandb_cfg.get("entity", "haoyuan-lingbot"),
@@ -79,12 +101,43 @@ def init_wandb(config):
         config=config,
         mode=wandb_cfg.get("mode", "online"),
     )
+    wandb.define_metric("train/global_step")
+    wandb.define_metric("train/*", step_metric="train/global_step")
+    wandb.define_metric("episode/index")
+    wandb.define_metric("episode/*", step_metric="episode/index")
+    return run
 
 
 def maybe_log_wandb(run, payload, step=None):
     if run is None or payload is None:
         return
     run.log(payload, step=step)
+
+
+def build_episode_wandb_payload(
+    *,
+    episode_idx,
+    episode_seed,
+    episode_return,
+    episode_success,
+    total_success,
+    episodes_completed,
+    replay_size,
+    chunks_executed,
+    last_train_step,
+):
+    success_rate = float(total_success) / max(int(episodes_completed), 1)
+    return {
+        "episode/index": int(episode_idx),
+        "episode/seed": int(episode_seed),
+        "episode/return": float(episode_return),
+        "episode/success": int(bool(episode_success)),
+        "episode/successes": int(total_success),
+        "episode/success_rate": success_rate,
+        "episode/replay_size": int(replay_size),
+        "episode/action_chunks_executed": int(chunks_executed),
+        "episode/train_global_step": int(last_train_step),
+    }
 
 
 def build_mock_episode(trainer):
@@ -169,6 +222,7 @@ def train_single_task(config):
     metrics_history = []
     total_success = 0
     episodes_completed = 0
+    last_train_step = 0
     blocked_error = None
     task_env = None
     try:
@@ -214,6 +268,8 @@ def train_single_task(config):
 
             first_chunk = True
             episode_return = 0.0
+            episode_success = False
+            chunks_executed = 0
             for chunk_idx in range(max_action_chunks):
                 rollout = execute_action_chunk(
                     task_env,
@@ -223,6 +279,7 @@ def train_single_task(config):
                     first_chunk=first_chunk,
                 )
                 episode_return += rollout["reward"]
+                chunks_executed = chunk_idx + 1
 
                 if rollout["done"]:
                     next_step_batch = trainer.policy.zero_step_batch()
@@ -235,14 +292,16 @@ def train_single_task(config):
                     )
                     metrics = trainer.update()
                     if metrics is not None:
+                        last_train_step = int(metrics.get("train/global_step", last_train_step))
                         log_dict("train/metrics", metrics)
                         maybe_log_wandb(
                             wandb_run,
                             metrics,
-                            step=int(metrics.get("train/global_step", 0)),
+                            step=last_train_step,
                         )
                         metrics_history.append(metrics)
-                    total_success += int(rollout["success"])
+                    episode_success = bool(rollout["success"])
+                    total_success += int(episode_success)
                     break
 
                 trainer.policy.compute_kv_cache(
@@ -263,11 +322,12 @@ def train_single_task(config):
                 )
                 metrics = trainer.update()
                 if metrics is not None:
+                    last_train_step = int(metrics.get("train/global_step", last_train_step))
                     log_dict("train/metrics", metrics)
                     maybe_log_wandb(
                         wandb_run,
                         metrics,
-                        step=int(metrics.get("train/global_step", 0)),
+                        step=last_train_step,
                     )
                     metrics_history.append(metrics)
                 current_step = next_step
@@ -282,11 +342,12 @@ def train_single_task(config):
                 )
                 metrics = trainer.update()
                 if metrics is not None:
+                    last_train_step = int(metrics.get("train/global_step", last_train_step))
                     log_dict("train/metrics", metrics)
                     maybe_log_wandb(
                         wandb_run,
                         metrics,
-                        step=int(metrics.get("train/global_step", 0)),
+                        step=last_train_step,
                     )
                     metrics_history.append(metrics)
 
@@ -296,20 +357,27 @@ def train_single_task(config):
                 "episode_idx": episode_idx,
                 "seed": episode_seed,
                 "return": episode_return,
+                "success": int(episode_success),
                 "successes": total_success,
+                "success_rate": float(total_success) / max(episodes_completed, 1),
+                "action_chunks_executed": chunks_executed,
+                "train_global_step": last_train_step,
                 "replay_size": len(trainer.replay_buffer),
             }
             log_dict("episode/summary", episode_summary)
             maybe_log_wandb(
                 wandb_run,
-                {
-                    "episode/index": episode_idx,
-                    "episode/seed": episode_seed,
-                    "episode/return": episode_return,
-                    "episode/successes": total_success,
-                    "episode/replay_size": len(trainer.replay_buffer),
-                },
-                step=episode_idx + 1,
+                build_episode_wandb_payload(
+                    episode_idx=episode_idx,
+                    episode_seed=episode_seed,
+                    episode_return=episode_return,
+                    episode_success=episode_success,
+                    total_success=total_success,
+                    episodes_completed=episodes_completed,
+                    replay_size=len(trainer.replay_buffer),
+                    chunks_executed=chunks_executed,
+                    last_train_step=last_train_step,
+                ),
             )
     except Exception as exc:
         blocked_error = str(exc)
@@ -355,7 +423,7 @@ def main():
     parser.add_argument("--config", required=True, help="YAML config path.")
     args = parser.parse_args()
 
-    config = load_config(args.config)
+    config = normalize_config_paths(load_config(args.config))
     train_single_task(config)
 
 

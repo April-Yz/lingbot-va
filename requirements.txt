@@ -6,7 +6,6 @@ transformers==4.55.2
 accelerate
 einops
 easydict
-flash_attn
 numpy==1.26.4
 tqdm
 imageio[ffmpeg]
@@ -18,7 +17,14 @@ ftfy
 safetensors
 Pillow
 
-# Post-training
-lerobot==0.3.3
-scipy
-wandb
+# Optional acceleration dependency:
+# install separately with:
+#   pip install flash-attn --no-build-isolation
+# Keep it out of the default requirements flow because build isolation
+# can fail before torch is visible in the build env.
+
+# Optional post-training extras:
+#   pip install lerobot==0.3.3 scipy wandb --no-deps
+# Keep these out of the default runtime requirements because `lerobot==0.3.3`
+# conflicts with the PyTorch 2.9 runtime used by this workspace unless it is
+# installed as a no-deps add-on.

@@ -52,6 +52,11 @@ If flash-attn can compile/install:
 pip install flash-attn --no-build-isolation
 ```
 
+Why it is separate:
+
+- `requirements.txt` does not install `flash-attn` by default
+- on some machines, `pip install -r requirements.txt` would fail if `flash-attn` tried to build inside an isolated build env before `torch` was visible
+
 If flash-attn is unavailable or ABI-incompatible, use `attn_mode=torch` for inference/eval.
 
 Important mode rule from project docs:
@@ -66,6 +71,7 @@ pip install lerobot==0.3.3 scipy wandb --no-deps
 ```
 
 Reason: avoid pulling conflicting transitive dependencies into the main LingBot stack.
+Also note that `lerobot==0.3.3` declares `torch<2.8.0`, so it must remain outside the default `requirements.txt` solve path in this workspace.
 
 ## 8. Minimal Validation
 

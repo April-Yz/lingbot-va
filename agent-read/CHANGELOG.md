@@ -2,6 +2,8 @@
 
 ## 2026-03-18
 
+- Removed `flash_attn` from the default `requirements.txt` install path and documented it as an optional separate install with `pip install flash-attn --no-build-isolation`, so a fresh `pip install -r requirements.txt` no longer fails during build isolation before `torch` is visible.
+- Removed `lerobot==0.3.3` from the default `requirements.txt` solve path and documented it as an optional post-training add-on installed with `--no-deps`, so the default runtime setup no longer conflicts with `torch==2.9.0`.
 - Added a new static V2 package under `wan_va/frozen_noise_dsrl/` for the Frozen LingBot + Future-Latent-Conditioned Action Noise experiment, including a dedicated future-latent adapter, noise policy, critic wrapper, and local embodied-SAC style trainer.
 - Added `script/run_lingbot_frozen_noise_dsrl_v2.py` as the dedicated V2 training entrypoint and `script/run_lingbot_frozen_noise_eval_v2.sh` as the dedicated static V2 eval helper.
 - Added `examples/embodiment/config/robotwin_lingbot_frozen_noise_dsrl_v2.yaml` with explicit V2 freeze and conditioning flags:

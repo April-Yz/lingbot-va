@@ -62,9 +62,16 @@ https://github.com/user-attachments/assets/cec7b7a6-953b-4fa4-8f1a-47efc1fce547
 
 ```bash
 pip install torch==2.9.0 torchvision==0.24.0 torchaudio==2.9.0 --index-url https://download.pytorch.org/whl/cu126
-pip install websockets einops diffusers==0.36.0 transformers==4.55.2 accelerate msgpack opencv-python matplotlib ftfy easydict
+pip install -r requirements.txt
+```
+
+Optional `flash-attn`:
+
+```bash
 pip install flash-attn --no-build-isolation
 ```
+
+`flash-attn` is intentionally optional in the default install flow. If it is unavailable or fails to build against the current PyTorch/CUDA ABI, keep inference and evaluation on `attn_mode="torch"`.
 
 
 ## ⚠️ Important: `attn_mode` Configuration
@@ -203,6 +210,8 @@ On top of the base installation, post-training requires:
 ```bash
 pip install lerobot==0.3.3 scipy wandb --no-deps
 ```
+
+`lerobot==0.3.3` is kept out of the default `requirements.txt` flow because its published dependency constraint requires `torch<2.8.0`, while this workspace uses `torch==2.9.0`.
 
 ### Data Preparation
 

@@ -3,14 +3,14 @@
 # handoff only and has not been validated on the current server.
 
 env:
-  robowin_root: /home/zaijia001/vam/RoboTwin-lingbot
+  robowin_root: ../RoboTwin-lingbot
   task_name: click_bell
   task_config: demo_clean_large_d435
   instruction_type: seen
 
 runner:
   seed: 10000
-  save_root: /home/zaijia001/vam/lingbot-va/train_out/frozen_noise_dsrl_v2_click_bell
+  save_root: train_out/frozen_noise_dsrl_v2_click_bell
   max_episodes: 1
   max_action_chunks: 2
 
@@ -23,8 +23,8 @@ wandb:
 
 policy:
   lingbot_config_name: robotwin
-  lingbot_model_path: /home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin
-  save_root: /home/zaijia001/vam/lingbot-va/visualization/frozen_noise_dsrl_v2
+  lingbot_model_path: checkpoints/lingbot-va-posttrain-robotwin
+  save_root: visualization/frozen_noise_dsrl_v2
   local_rank: 0
   rank: 0
   world_size: 1
