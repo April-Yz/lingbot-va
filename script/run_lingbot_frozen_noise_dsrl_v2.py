@@ -18,9 +18,12 @@ from wan_va.action_only_dsrl.robotwin_env import (
     bootstrap_robowin_root,
     build_task_args,
     class_decorator,
+    configure_episode_video_logging,
     execute_action_chunk,
     find_valid_seed,
+    finish_episode_video,
     prepare_episode,
+    start_episode_video,
 )
 from wan_va.frozen_noise_dsrl import LingBotFrozenNoiseV2Trainer
 
@@ -45,6 +48,17 @@ def setup_logging(save_root):
 def load_config(path):
     with open(path, "r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
+
+
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    value = str(value).strip().lower()
+    if value in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "f", "no", "n", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Invalid boolean value: {value}")
 
 
 def _resolve_repo_path(path_value):
@@ -114,6 +128,33 @@ def maybe_log_wandb(run, payload, step=None):
     run.log(payload, step=step)
 
 
+def maybe_log_wandb_video(
+    run,
+    video_path,
+    *,
+    episode_idx,
+    success,
+    upload_interval,
+    enabled,
+):
+    if run is None or not enabled or video_path is None:
+        return False
+    upload_interval = max(int(upload_interval), 1)
+    if (int(episode_idx) + 1) % upload_interval != 0:
+        return False
+
+    import wandb
+
+    run.log(
+        {
+            "episode/index": int(episode_idx),
+            "episode/video": wandb.Video(str(video_path), format="mp4"),
+            "episode/video_upload_success": int(bool(success)),
+        }
+    )
+    return True
+
+
 def build_episode_wandb_payload(
     *,
     episode_idx,
@@ -125,6 +166,8 @@ def build_episode_wandb_payload(
     replay_size,
     chunks_executed,
     last_train_step,
+    video_saved,
+    video_uploaded,
 ):
     success_rate = float(total_success) / max(int(episodes_completed), 1)
     return {
@@ -137,7 +180,29 @@ def build_episode_wandb_payload(
         "episode/replay_size": int(replay_size),
         "episode/action_chunks_executed": int(chunks_executed),
         "episode/train_global_step": int(last_train_step),
+        "episode/video_saved": int(bool(video_saved)),
+        "episode/video_uploaded": int(bool(video_uploaded)),
     }
+
+
+def resolve_episode_video_dir(save_root, config):
+    runner_cfg = config.get("runner", {})
+    if not bool(runner_cfg.get("save_episode_videos", False)):
+        return None
+    subdir = runner_cfg.get("episode_video_subdir", "episode_videos")
+    return save_root / subdir
+
+
+def apply_cli_overrides(config, args):
+    config = dict(config)
+    config["runner"] = dict(config.get("runner", {}))
+    config["wandb"] = dict(config.get("wandb", {}))
+
+    config["runner"]["save_episode_videos"] = bool(args.save_episode_videos)
+    config["runner"]["episode_video_subdir"] = args.episode_video_subdir
+    config["runner"]["wandb_video_upload"] = bool(args.wandb_video_upload)
+    config["runner"]["wandb_video_upload_interval"] = int(args.wandb_video_upload_interval)
+    return config
 
 
 def build_mock_episode(trainer):
@@ -225,6 +290,9 @@ def train_single_task(config):
     last_train_step = 0
     blocked_error = None
     task_env = None
+    episode_video_root = resolve_episode_video_dir(save_root, config)
+    wandb_video_upload = bool(config["runner"].get("wandb_video_upload", False))
+    wandb_video_upload_interval = int(config["runner"].get("wandb_video_upload_interval", 5))
     try:
         robowin_root = bootstrap_robowin_root(config["env"]["robowin_root"])
         args = build_task_args(
@@ -233,6 +301,11 @@ def train_single_task(config):
             task_config=config["env"]["task_config"],
             save_root=save_root,
             policy_name="lingbot_frozen_noise_dsrl_v2",
+        )
+        configure_episode_video_logging(
+            args,
+            episode_video_dir=episode_video_root,
+            enable=episode_video_root is not None,
         )
 
         task_env = class_decorator(config["env"]["task_name"])
@@ -259,6 +332,7 @@ def train_single_task(config):
             )
 
             trainer.policy.reset(episode["prompt"])
+            episode_video_path = start_episode_video(task_env, args, episode_idx)
             current_step = trainer.policy.act(
                 episode["formatted_obs"],
                 deterministic=False,
@@ -351,6 +425,19 @@ def train_single_task(config):
                     )
                     metrics_history.append(metrics)
 
+            final_episode_video_path = finish_episode_video(
+                task_env,
+                episode_idx=episode_idx,
+                success=episode_success,
+            )
+            video_uploaded = maybe_log_wandb_video(
+                wandb_run,
+                final_episode_video_path,
+                episode_idx=episode_idx,
+                success=episode_success,
+                upload_interval=wandb_video_upload_interval,
+                enabled=wandb_video_upload,
+            )
             task_env.close_env(clear_cache=True)
             episodes_completed += 1
             episode_summary = {
@@ -363,6 +450,7 @@ def train_single_task(config):
                 "action_chunks_executed": chunks_executed,
                 "train_global_step": last_train_step,
                 "replay_size": len(trainer.replay_buffer),
+                "video_path": str(final_episode_video_path) if final_episode_video_path else None,
             }
             log_dict("episode/summary", episode_summary)
             maybe_log_wandb(
@@ -377,6 +465,8 @@ def train_single_task(config):
                     replay_size=len(trainer.replay_buffer),
                     chunks_executed=chunks_executed,
                     last_train_step=last_train_step,
+                    video_saved=final_episode_video_path is not None,
+                    video_uploaded=video_uploaded,
                 ),
             )
     except Exception as exc:
@@ -388,6 +478,13 @@ def train_single_task(config):
         log_dict("robowin/blocker", blocker_payload)
         maybe_log_wandb(wandb_run, {"robowin/blocked": 1, "robowin/error": blocked_error})
     finally:
+        try:
+            if task_env is not None and getattr(task_env, "eval_video_path", None) is not None:
+                ffmpeg = getattr(task_env, "eval_video_ffmpeg", None)
+                if ffmpeg is not None:
+                    task_env._del_eval_video_ffmpeg()
+        except Exception:
+            pass
         try:
             if task_env is not None:
                 task_env.close_env(clear_cache=True)
@@ -421,9 +518,33 @@ def train_single_task(config):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="YAML config path.")
+    parser.add_argument(
+        "--save-episode-videos",
+        type=str2bool,
+        default=False,
+        help="Whether to save one local rollout video for every training episode.",
+    )
+    parser.add_argument(
+        "--episode-video-subdir",
+        default="episode_videos",
+        help="Subdirectory under runner.save_root for locally saved episode videos.",
+    )
+    parser.add_argument(
+        "--wandb-video-upload",
+        type=str2bool,
+        default=False,
+        help="Whether to upload selected episode videos to WandB.",
+    )
+    parser.add_argument(
+        "--wandb-video-upload-interval",
+        type=int,
+        default=5,
+        help="Upload one episode video to WandB every N completed episodes.",
+    )
     args = parser.parse_args()
 
     config = normalize_config_paths(load_config(args.config))
+    config = apply_cli_overrides(config, args)
     train_single_task(config)
 
 

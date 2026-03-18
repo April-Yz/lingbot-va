@@ -13,6 +13,8 @@ runner:
   save_root: train_out/frozen_noise_dsrl_v2_click_bell
   max_episodes: 1
   max_action_chunks: 2
+  save_episode_videos: false
+  episode_video_subdir: episode_videos
 
 wandb:
   enable: true

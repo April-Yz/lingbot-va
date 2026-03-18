@@ -27,9 +27,17 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
 ## Current Workspace Notes
 
 - The local `lingbot-va` conda environment was created for this repository.
-- The RoboTwin evaluation config points to `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`.
+- Common server path map:
+  - `servery`: `/home/e230112/vam`
+  - `serverd`: `/home/zaijia001/vam`
+- The RoboTwin evaluation config should point to the local server's LingBot checkpoint root:
+  - `servery`: `/home/e230112/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
+  - `serverd`: `/home/zaijia001/vam/lingbot-va/checkpoints/lingbot-va-posttrain-robotwin`
 - The RoboTwin checkpoint currently in use is the post-trained RoboTwin model `robbyant/lingbot-va-posttrain-robotwin`; the pre-RoboTwin base model is `robbyant/lingbot-va-base`.
-- RoboTwin evaluation is wired to `/home/zaijia001/vam/RoboTwin-lingbot` by default and can be overridden with `ROBOTWIN_ROOT`.
+- RoboTwin evaluation should use the matching local RoboTwin repo:
+  - `servery`: `/home/e230112/vam/RoboTwin-lingbot`
+  - `serverd`: `/home/zaijia001/vam/RoboTwin-lingbot`
+  and can still be overridden with `ROBOTWIN_ROOT`.
 - `lerobot==0.3.3` remains installed for post-training support, but its published dependency constraints conflict with the upstream LingBot-VA PyTorch requirement. Follow the repository README and treat it as a `--no-deps` style add-on.
 - If `flash-attn` is unavailable or ABI-incompatible, use `attn_mode='torch'`.
 - Baseline eval and post-train notes now live under `agent-read/baseline/`.
@@ -82,7 +90,7 @@ LingBot-VA is a robot video-action foundation model built around the `wan_va/` p
   - `use_dsrl=true` injects steering noise with shape `[1, 30, 2, 16, 1]`
   - local embodied-SAC metrics are emitted by the new trainer in mock mode
 - Full RoboTwin online single-task training for the new DSRL entry is now runnable on this machine for RGB-based tasks. On March 16, 2026, a `click_bell` run completed one full online episode, logged SAC metrics at steps `2`, `3`, and `4`, and exited cleanly with `current_run_status: "finished_no_success"`.
-- `pytorch3d` still is not installed on this machine, but `/home/zaijia001/vam/RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
+- `pytorch3d` still is not installed on this machine, but the local `RoboTwin-lingbot/envs/camera/camera.py` now falls back to a CPU farthest-point sampler instead of terminating the process.
 - V1 requirement, implementation, change-log, and environment docs now live under `agent-read/v1/`.
 - The detailed implementation handoff for this feature is in `agent-read/v1/implementation_report_lingbot_action_only_dsrl.md`, with exact file diffs summarized in `agent-read/v1/change_log_lingbot_action_only_dsrl.md` and all environment edits logged in `agent-read/v1/env_change_log.md`.
 - A Chinese gap-analysis note comparing the current implementation against the stricter `action_only_v1.4.md` requirements is now available in `agent-read/v1/action_only_v1.4_gap_zh.md`.

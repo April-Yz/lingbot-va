@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -78,6 +79,17 @@ def build_task_args(robowin_root, task_name, task_config, save_root, policy_name
 
     args["left_embodiment_config"] = get_embodiment_config(args["left_robot_file"])
     args["right_embodiment_config"] = get_embodiment_config(args["right_robot_file"])
+    return args
+
+
+def configure_episode_video_logging(args, episode_video_dir=None, enable=False):
+    args["eval_video_log"] = bool(enable)
+    if enable and episode_video_dir is not None:
+        episode_video_dir = Path(episode_video_dir)
+        episode_video_dir.mkdir(parents=True, exist_ok=True)
+        args["eval_video_save_dir"] = str(episode_video_dir)
+    else:
+        args.pop("eval_video_save_dir", None)
     return args
 
 
@@ -172,6 +184,62 @@ def prepare_episode(task_env, args, episode_idx, seed, instruction_type="seen"):
         "formatted_obs": format_obs(initial_obs, prompt),
         "init_eef_pose": _initial_eef_pose(initial_obs),
     }
+
+
+def start_episode_video(task_env, args, episode_idx, fps=10):
+    video_dir = args.get("eval_video_save_dir")
+    if not video_dir:
+        return None
+
+    video_dir = Path(video_dir)
+    video_dir.mkdir(parents=True, exist_ok=True)
+    video_path = video_dir / f"episode{episode_idx}.mp4"
+    video_size = f"{args['head_camera_w']}x{args['head_camera_h']}"
+    task_env.test_num = episode_idx
+    ffmpeg = subprocess.Popen(
+        [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "rawvideo",
+            "-pixel_format",
+            "rgb24",
+            "-video_size",
+            video_size,
+            "-framerate",
+            str(fps),
+            "-i",
+            "-",
+            "-pix_fmt",
+            "yuv420p",
+            "-vcodec",
+            "libx264",
+            "-crf",
+            "23",
+            str(video_path),
+        ],
+        stdin=subprocess.PIPE,
+    )
+    task_env._set_eval_video_ffmpeg(ffmpeg)
+    return video_path
+
+
+def finish_episode_video(task_env, episode_idx, success):
+    video_dir = getattr(task_env, "eval_video_path", None)
+    if video_dir is None:
+        return None
+    task_env._del_eval_video_ffmpeg()
+    original_path = Path(video_dir) / f"episode{episode_idx}.mp4"
+    if not original_path.exists():
+        return None
+    outcome = "succ" if success else "fail"
+    renamed_path = Path(video_dir) / f"episode{episode_idx}-{outcome}.mp4"
+    if renamed_path.exists():
+        renamed_path.unlink()
+    original_path.rename(renamed_path)
+    return renamed_path
 
 
 def execute_action_chunk(

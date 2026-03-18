@@ -11,6 +11,13 @@ Build a stable LingBot-VA runtime and post-training environment that can interop
 - Core dependency files:
   - `requirements.txt`
   - `pyproject.toml`
+- Server path examples:
+  - `servery`
+    - `lingbot-va`: `/home/e230112/vam/lingbot-va`
+    - `RoboTwin-lingbot`: `/home/e230112/vam/RoboTwin-lingbot`
+  - `serverd`
+    - `lingbot-va`: `/home/zaijia001/vam/lingbot-va`
+    - `RoboTwin-lingbot`: `/home/zaijia001/vam/RoboTwin-lingbot`
 
 ## 3. Python And CUDA Baseline
 
@@ -84,7 +91,9 @@ python -c "import wan_va; print('wan_va import ok')"
 
 LingBot eval uses RoboTwin in a separate repository/environment:
 
-- RoboTwin repo: `/home/zaijia001/vam/RoboTwin-lingbot`
+- RoboTwin repo:
+  - `servery`: `/home/e230112/vam/RoboTwin-lingbot`
+  - `serverd`: `/home/zaijia001/vam/RoboTwin-lingbot`
 - RoboTwin env: `RoboTwin-lingbot`
 
 Set `ROBOTWIN_ROOT` accordingly when running eval client/server scripts.
